@@ -30,7 +30,7 @@ Two screens, and they are really two states of one surface. There is intentional
 **Purpose:** Capture the minimum facts needed for a safe treat-or-refer decision, fast, with one thumb.
 
 **Layout (top to bottom):**
-1. Title + one-line caption ("Point-of-care treat / refer — screening only") — sets context and the honest limit.
+1. Title ("FeverGate") + one-line caption ("Point-of-care treat / refer — screening only") — sets context and the honest limit.
 2. Age band selector (4 options) — single choice, defaults to 2 months–5 years (the most common case).
 3. Fever toggle (default on) + fever-duration number input, side by side.
 4. "Danger signs" section header.
@@ -46,7 +46,7 @@ Two screens, and they are really two states of one surface. There is intentional
 - **Default:** All tiles off, age = under-5, fever on. The form is the resting state between patients.
 - **Empty / first-time:** Identical to default — there is no data to be missing. The caption is the only onboarding; no tutorial overlay.
 - **Loading:** Effectively none. The engine is local and synchronous (sub-millisecond); the result card appears on the same tap with no spinner.
-- **Error:** Engine input is fully constrained by the form, so user-facing errors are near-impossible. If the engine raises, show a plain inline message ("Couldn't assess — check inputs and retry") rather than a blank screen.
+- **Error:** If the engine raises, show a plain inline message ("Couldn't assess — check inputs and retry") rather than a blank screen.
 - **Edge / "too much":** Many tiles on at once is fine and expected (a very sick patient) — the result simply lists every named reason; the grid never scrolls past two thumb-reachable columns.
 
 ### Result card
@@ -74,7 +74,7 @@ Two screens, and they are really two states of one surface. There is intentional
 
 ## 5. The user journey
 
-> A worker opens FeverGate to a clean form: age band already on under-5, fever on. A mother's child has been having fits. The worker taps the lightning-bolt convulsions tile — it goes solid red-on — and taps "Assess patient." The screen snaps to a calm full-width red card: **REFER**, "Convulsions — refer immediately." There is no ambiguity and nothing to interpret; the worker reads the reason aloud to the mother, taps "Refer now," and arranges transport.
+> A worker opens FeverGate to a clean form: age band already on under-5, fever on. A mother's child has been having fits. The worker taps the lightning-bolt convulsions tile — it goes solid — and taps "Assess patient." The screen snaps to a calm full-width red card: **REFER**, "Convulsions — refer immediately." There is no ambiguity and nothing to interpret; the worker reads the reason aloud to the mother, taps "Refer now," and arranges transport.
 >
 > The next patient is a toddler with a two-day fever and no danger signs. Same form, the worker leaves all tiles off, taps "Assess patient," and gets an amber card: **TREAT & MONITOR**, "Treat now and re-check in 3 days." They give treatment, note the re-check, and tap "← New patient."
 >
@@ -83,7 +83,7 @@ Two screens, and they are really two states of one surface. There is intentional
 ## 6. Component & visual notes
 
 - **Typography:** Large, high-weight, high-contrast. Decision word oversized; reason line big enough to read at arm's length. System fonts — legibility over personality.
-- **Color:** Three decision colors carry nearly all meaning — red = refer, amber = treat-and-monitor, green = treat. Chosen for contrast in direct sunlight, not brand aesthetics. Color is never the *only* signal; the decision word and reason text always accompany it.
+- **Color:** Three decision colors carry nearly all meaning — red = refer (#c0392b), amber = treat-and-monitor (#d68910), green = treat (#1e8449). Chosen for contrast in direct sunlight, not brand aesthetics. Color is never the *only* signal; the decision word and reason text always accompany it.
 - **Motion:** Almost none, on purpose. The form-to-card transition is an immediate replace, not a flourish. Nothing bounces; nothing celebrates a referral.
 - **The signature visual:** The danger-sign tile in its "on" state — a large icon + label that fills with a solid, unmistakable state when tapped, so a glance confirms exactly which signs are flagged. The grid of these tiles is the face of the product.
 - **Microcopy voice:** Plain, calm, clinical-but-human. "Refer now," not "Initiate referral protocol." "Treat now and re-check in 3 days," not "Schedule follow-up encounter."
@@ -92,8 +92,8 @@ Two screens, and they are really two states of one surface. There is intentional
 
 - **Low vision / screen reader:** Tiles carry text labels, not icon-only meaning, so screen readers and low-literacy-of-symbols users both get the word. Decision is conveyed by text + color, never color alone.
 - **Motor difficulty:** Large, full-width tap targets and a thumb-anchored primary button; no precise gestures, drags, or long-presses anywhere.
-- **Low / spotty connectivity:** The decision engine runs locally and synchronously — the core flow needs no network at all. (A true offline-installable PWA is deferred; see below.)
-- **Doesn't read English:** v1 ships English labels, but every tile and decision string is a centralized, translatable label — local-language strings are a swap, not a redesign. This is a deliberate v1 limit, not "TBD."
+- **Low / spotty connectivity:** The decision engine runs locally and synchronously — the core flow needs no network at all. (A true offline-installable PWA is deferred.)
+- **Doesn't read English:** v1 ships English labels, but every tile and decision string is a centralized, translatable label — local-language strings are a swap, not a redesign. This is a deliberate v1 limit.
 
 ## 8. What we are NOT designing
 
@@ -113,4 +113,4 @@ Two screens, and they are really two states of one surface. There is intentional
 
 > The whole experience hinges on the form-to-card *snap* feeling instant and unambiguous — because the engine is local, there is no real latency to hide, so engineering's job is to make the state switch atomic (form → correct-color card with the named reason) with no flicker, blank frame, or wrong-color flash on a referral.
 
-Open technical items left on the table: the referral-reason string is assembled from the engine's trigger codes via a shared label map (so UI wording and engine reasons never drift), and "Refer now" needs a defined behavior (no-op vs. logged) before build.
+Open technical items: the referral-reason string is assembled from engine trigger codes via `DANGER_SIGN_LABELS` in `src/ui/refer_reason.py` (so UI wording and engine reasons never drift), and "Refer now" needs a defined behavior (no-op vs. logged) before field deployment.

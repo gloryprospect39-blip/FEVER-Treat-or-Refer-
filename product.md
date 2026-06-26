@@ -37,12 +37,12 @@ If you can't write this sentence, the product doesn't have magic yet. Go back to
 
 ## 5. Scope: what we are NOT building
 
-- **No lab or rapid-test input** — deciding *without* one is the entire point; adding test results is a different product
+- **No lab or rapid-test input** — deciding without one is the entire point; adding test results is a different product
 - **No SMS / push / notifications** — TREAT_AND_MONITOR is a decision flag in v1, not a delivery system
 - **No cloud database or fever registry** — local only; a registry must never block the bedside decision
 - **No accounts or login** — one worker, one device, zero friction
-- **No stock/logistics dashboard or reorder hooks** — needs registry data first; not the v1 bet
-- **No LLM in the decision** — an AI may *explain* the rule output later, but it never decides or overrides a REFER
+- **No malaria endemicity / presumptive ACT drug plan in v1 UI** — the refer-now safety net ships first; treat pathways come next
+- **No LLM in the decision** — an AI may explain the rule output later, but it never decides or overrides a REFER
 
 ## 6. The signature detail
 
@@ -51,8 +51,8 @@ The danger-sign grid is large, icon-led tiles a worker taps with one thumb on a 
 ## 7. Success: how we know it worked
 
 - **Primary:** Zero cases where a positive danger sign produces anything other than a referral. This is a safety product; a single false negative is the failure that matters.
-- **Secondary:** The rule engine agrees with expert clinical judgment on the curated set of danger-sign and fever test cases.
-- **What we're NOT measuring:** Total encounters, app installs, time-in-app, NPS — meaningless before real field deployment and a distraction from the safety bar.
+- **Secondary:** A clinic worker completes triage and reaches a decision screen in under 60 seconds in a timed walkthrough.
+- **What we're NOT measuring:** Total encounters logged, app installs, time-in-app, NPS — meaningless before real field deployment and a distraction from the safety bar.
 
 ## 8. Open questions
 
