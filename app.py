@@ -1,6 +1,6 @@
-"""Point-of-care febrile triage UI (Streamlit).
+"""FeverGate — point-of-care febrile triage UI (Streamlit).
 
-Run with: ``streamlit run app.py``
+Run with: ``uv run streamlit run app.py``
 """
 
 import sys
@@ -12,33 +12,10 @@ sys.path.insert(0, str(ROOT / "src"))
 import streamlit as st
 
 from decision_engine import evaluate_febrile_patient
-from decision_engine.models import (
-    DANGER_SIGN_LABELS,
-    ConsciousnessLevel,
-    DangerSigns,
-    PatientContext,
-    ReferralUrgency,
-    TriageDecision,
-    VitalSigns,
-)
+from decision_engine.models import TriageDecision
 from ui.danger_sign_labels import DANGER_SIGN_TILES
-
-AGE_BANDS = {
-    "Under 2 months": 1,
-    "2 months \u2013 5 years": 24,
-    "5\u201315 years": 96,
-    "Adult": 480,
-}
-
-EXTRA_REASON_LABELS = {
-    "neonate_fever": DANGER_SIGN_LABELS["neonate_fever"],
-    "hypoxia": "Low oxygen saturation",
-    "hypotension_adult": "Low blood pressure",
-    "hypotension_pediatric": "Low blood pressure",
-    "weak_or_absent_radial_pulse": "Weak or absent pulse",
-    "qsofa>=2": "Elevated qSOFA",
-    "composite_sepsis_score>=3": "Elevated sepsis screen",
-}
+from ui.patient_context import AGE_BANDS, build_patient_context
+from ui.refer_reason import build_refer_reason
 
 CARD_CSS = """
 <style>
@@ -69,34 +46,13 @@ CARD_CSS = """
 """
 
 
-def _urgency_phrase(urgency: ReferralUrgency) -> str:
-    if urgency == ReferralUrgency.IMMEDIATE:
-        return "refer immediately"
-    if urgency == ReferralUrgency.SAME_DAY:
-        return "refer (same day)"
-    return "refer"
-
-
-def build_refer_reason(referral_reasons: list[str], urgency: ReferralUrgency) -> str:
-    named: list[str] = []
-    for code in referral_reasons:
-        label = DANGER_SIGN_LABELS.get(code) or EXTRA_REASON_LABELS.get(code)
-        if label is None and code.startswith("news2>="):
-            label = "Elevated NEWS2"
-        if label and label not in named:
-            named.append(label)
-
-    subject = ", ".join(named) if named else "Elevated severe-illness screen"
-    return f"{subject} \u2014 {_urgency_phrase(urgency)}."
-
-
 def reset_to_form() -> None:
     st.session_state.clear()
 
 
 def render_form() -> None:
-    st.title("\U0001fa7a Febrile triage")
-    st.caption("Point-of-care treat / refer decision support \u2014 screening only.")
+    st.title("FeverGate")
+    st.caption("Point-of-care treat / refer \u2014 screening only.")
 
     band = st.radio("Age band", list(AGE_BANDS.keys()), index=1)
 
@@ -118,36 +74,27 @@ def render_form() -> None:
             )
 
     if st.button("Assess patient", type="primary", use_container_width=True):
-        danger_kwargs: dict[str, bool] = {}
-        consciousness = ConsciousnessLevel.ALERT
-        for tile in DANGER_SIGN_TILES:
-            if not selected.get(tile.trigger_code):
-                continue
-            if tile.danger_field:
-                danger_kwargs[tile.danger_field] = True
-            if tile.consciousness == ConsciousnessLevel.UNCONSCIOUS:
-                consciousness = ConsciousnessLevel.UNCONSCIOUS
-            elif (
-                tile.consciousness == ConsciousnessLevel.LETHARGIC
-                and consciousness != ConsciousnessLevel.UNCONSCIOUS
-            ):
-                consciousness = ConsciousnessLevel.LETHARGIC
-
-        ctx = PatientContext(
-            age_months=AGE_BANDS[band],
-            has_fever=has_fever,
-            fever_duration_days=int(fever_days),
-            consciousness=consciousness,
-            danger_signs=DangerSigns(**danger_kwargs),
-            vitals=VitalSigns(),
-        )
-        st.session_state["assessment"] = evaluate_febrile_patient(ctx)
-        st.session_state["show_result"] = True
-        st.rerun()
+        try:
+            ctx = build_patient_context(
+                age_band=band,
+                has_fever=has_fever,
+                fever_duration_days=int(fever_days),
+                selected_tiles=selected,
+            )
+            st.session_state["assessment"] = evaluate_febrile_patient(ctx)
+            st.session_state["show_result"] = True
+            st.rerun()
+        except Exception:
+            st.error("Couldn't assess \u2014 check inputs and retry.")
 
 
 def render_result() -> None:
-    assessment = st.session_state["assessment"]
+    assessment = st.session_state.get("assessment")
+    if assessment is None:
+        st.session_state["show_result"] = False
+        st.rerun()
+        return
+
     decision = assessment.decision
     st.markdown(CARD_CSS, unsafe_allow_html=True)
 
@@ -187,7 +134,7 @@ def render_result() -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="Febrile triage", page_icon="\U0001fa7a", layout="centered")
+    st.set_page_config(page_title="FeverGate", page_icon="\U0001fa7a", layout="centered")
     if st.session_state.get("show_result"):
         render_result()
     else:

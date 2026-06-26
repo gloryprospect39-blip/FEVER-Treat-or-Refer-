@@ -14,10 +14,12 @@ This tool **does not diagnose sepsis**; it flags likely severe illness for refer
 ## Setup
 
 ```bash
-pip install -r requirements.txt
-streamlit run app.py
-pytest tests/ -v
+uv sync
+uv run streamlit run app.py
+uv run pytest tests/ -v
 ```
+
+Dependencies are managed with [uv](https://docs.astral.sh/uv/) via `pyproject.toml`.
 
 The Streamlit app (`app.py`) is the point-of-care triage UI: a mobile-first
 single page with the 8 IMCI danger-sign tiles, an age band selector, and a fever
