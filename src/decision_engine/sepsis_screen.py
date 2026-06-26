@@ -214,9 +214,6 @@ def _hard_referral_triggers(ctx: PatientContext) -> list[str]:
     if ctx.has_fever and age_band == "neonate":
         triggers.append("neonate_fever")
 
-    if ctx.danger_signs.convulsions:
-        triggers.append("convulsions")
-
     if vitals.weak_or_absent_radial_pulse:
         triggers.append("weak_or_absent_radial_pulse")
 
@@ -229,8 +226,12 @@ def _hard_referral_triggers(ctx: PatientContext) -> list[str]:
     elif vitals.systolic_bp is not None and vitals.systolic_bp < 70:
         triggers.append("hypotension_pediatric")
 
-    if age_band in {"neonate", "under5"}:
-        triggers.extend(_imci_danger_signs(ctx))
+    triggers.extend(_imci_danger_signs(ctx))
+
+    # Preserve the bare "convulsions" reason (exact-membership) for backward
+    # compatibility alongside the namespaced "imci:convulsions" trigger.
+    if ctx.danger_signs.convulsions:
+        triggers.append("convulsions")
 
     return sorted(set(triggers))
 

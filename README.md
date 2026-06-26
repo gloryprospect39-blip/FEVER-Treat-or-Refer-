@@ -15,8 +15,15 @@ This tool **does not diagnose sepsis**; it flags likely severe illness for refer
 
 ```bash
 pip install -r requirements.txt
-pytest tests/test_sepsis_screen.py -v
+streamlit run app.py
+pytest tests/ -v
 ```
+
+The Streamlit app (`app.py`) is the point-of-care triage UI: a mobile-first
+single page with the 8 IMCI danger-sign tiles, an age band selector, and a fever
+toggle. On submit it calls the decision engine and shows a full-width **REFER
+snap screen** (red card with a named reason for referral, amber for treat &
+monitor, green for treat).
 
 ## Usage
 
