@@ -36,6 +36,20 @@ class Comorbidity(str, Enum):
     RECENT_SURGERY_OR_WOUND = "recent_surgery_or_wound"
 
 
+DANGER_SIGN_LABELS: dict[str, str] = {
+    "imci:unable_to_drink_or_breastfeed": "Unable to drink or breastfeed",
+    "imci:vomits_everything": "Vomits everything",
+    "imci:convulsions": "Convulsions",
+    "imci:lethargic": "Lethargic",
+    "imci:unconscious": "Unconscious",
+    "imci:chest_indrawing": "Chest indrawing",
+    "imci:stiff_neck": "Stiff neck",
+    "imci:bulging_fontanelle": "Bulging fontanelle",
+    "imci:severe_palmar_pallor": "Severe palmar pallor",
+    "neonate_fever": "Neonate with fever",
+}
+
+
 class VitalSigns(BaseModel):
     temperature_c: Optional[float] = None
     heart_rate: Optional[int] = None
