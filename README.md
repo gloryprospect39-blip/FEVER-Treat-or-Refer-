@@ -53,6 +53,8 @@ print(result.decision, result.sepsis.score, result.referral_reasons)
 | Adult | 18–64 years | qSOFA / NEWS2 + composite |
 | Elderly | ≥65 years | As adult + age risk points |
 
+The Streamlit form uses six age bands (including split adolescent / adult / elderly) and shows **underlying disease** toggles by organ system (heart, lungs, kidneys, etc.) for patients aged 15 and older.
+
 ## Output decisions
 
 - `REFER_IMMEDIATE` — danger sign or critical vitals

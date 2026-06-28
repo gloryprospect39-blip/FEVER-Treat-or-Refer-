@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT / "src"))
 import streamlit as st
 
 from decision_engine import evaluate_febrile_patient
-from decision_engine.models import TriageDecision
+from decision_engine.models import Comorbidity, TriageDecision
+from ui.comorbidity_options import COMORBIDITY_AGE_BANDS, options_by_system
 from ui.danger_sign_labels import DANGER_SIGN_TILES
 from ui.patient_context import AGE_BANDS, build_patient_context
 from ui.refer_reason import build_refer_reason
@@ -73,6 +74,21 @@ def render_form() -> None:
                 f"{tile.icon} {tile.label}", key=f"tile_{tile.trigger_code}"
             )
 
+    selected_comorbidities: list[Comorbidity] = []
+    if band in COMORBIDITY_AGE_BANDS:
+        st.subheader("Underlying diseases")
+        st.caption("Tap any that apply — grouped by organ system.")
+        for system, options in options_by_system().items():
+            st.markdown(f"**{system}**")
+            comorb_cols = st.columns(2)
+            for index, option in enumerate(options):
+                with comorb_cols[index % 2]:
+                    if st.toggle(
+                        f"{option.icon} {option.label}",
+                        key=f"comorb_{option.comorbidity.value}",
+                    ):
+                        selected_comorbidities.append(option.comorbidity)
+
     if st.button("Assess patient", type="primary", use_container_width=True):
         try:
             ctx = build_patient_context(
@@ -80,6 +96,7 @@ def render_form() -> None:
                 has_fever=has_fever,
                 fever_duration_days=int(fever_days),
                 selected_tiles=selected,
+                comorbidities=selected_comorbidities,
             )
             st.session_state["assessment"] = evaluate_febrile_patient(ctx)
             st.session_state["show_result"] = True
