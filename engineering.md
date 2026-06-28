@@ -9,7 +9,7 @@
 
 ## 1. Summary
 
-FeverGate is a non-laboratory treat-or-refer decision aid for febrile patients of all ages. The system is a deterministic Python rule engine (`evaluate_febrile_patient`) wrapped in a single-page Streamlit UI, managed with **uv** via `pyproject.toml`. There is no network service, no database server, and no LLM in the decision path — the entire decision is a pure function over a typed `PatientContext`. The single most interesting engineering choice is making safety a *structural* property: any positive WHO IMCI danger sign at any age flows through one hard-referral gate that short-circuits the rest of the logic, then gets pinned by an exhaustive parametrized test suite (84 tests today).
+FeverGate is a non-laboratory treat-or-refer decision aid for febrile patients of all ages. The system is a deterministic Python rule engine (`evaluate_febrile_patient`) wrapped in a single-page Streamlit UI, managed with **uv** via `pyproject.toml`. There is no network service, no database server, and no LLM in the decision path — the entire decision is a pure function over a typed `PatientContext`. The single most interesting engineering choice is making safety a *structural* property: any positive WHO IMCI danger sign at any age flows through one hard-referral gate that short-circuits the rest of the logic, while comorbidities for patients aged 15+ feed into the composite score without weakening that gate — all pinned by an exhaustive parametrized test suite (85 tests today).
 
 ## 2. Assumptions
 
@@ -25,6 +25,7 @@ FeverGate is a non-laboratory treat-or-refer decision aid for febrile patients o
 - Deterministic, auditable engine returning `REFER_IMMEDIATE` / `REFER` / `TREAT_AND_MONITOR` / `TREAT` with referral reasons.
 - Any positive IMCI danger sign, at any age, always yields a referral decision (the safety invariant).
 - Neonate (<2 months) with fever always refers immediately.
+- Six age bands in the UI (including split adolescent / adult / elderly) with system-wise comorbidity toggles for 15+.
 - A Streamlit triage form → result-card flow usable end-to-end in under 60 seconds.
 - Decision latency p99 < 10ms (local pure function); UI swap form→card with no wrong-color flash on referral.
 
@@ -32,7 +33,8 @@ FeverGate is a non-laboratory treat-or-refer decision aid for febrile patients o
 - No LLM anywhere in the decision path — explanation narration is a later, non-deciding layer.
 - No persistence beyond in-session `st.session_state`; no encounter database.
 - Designed for single-device use; will not scale to a shared multi-user backend without rework — and that's fine.
-- No vitals-driven adult pathways beyond the existing qSOFA/NEWS2/composite screen in the engine (vitals UI deferred).
+- No vitals-entry UI (vitals can be passed programmatically; qSOFA/NEWS2/composite already in engine).
+- No comorbidity capture for under-15 in the UI (deferred — sickle cell / malnutrition may come later).
 
 ## 4. Architecture
 
@@ -40,6 +42,7 @@ FeverGate is a non-laboratory treat-or-refer decision aid for febrile patients o
 flowchart TD
     worker["Health worker (phone browser)"]
     form["Streamlit form (app.py)"]
+    comorb["comorbidity_options.py"]
     builder["build_patient_context()"]
     ctx["PatientContext (pydantic)"]
     engine["evaluate_febrile_patient()"]
@@ -52,6 +55,8 @@ flowchart TD
     card["Result card"]
 
     worker --> form
+    form --> comorb
+    comorb --> form
     form --> builder
     builder --> ctx
     ctx --> engine
@@ -67,8 +72,8 @@ flowchart TD
 ```
 
 **What's here:**
-- **Streamlit app (`app.py`)** — renders form/result; owns `st.session_state` view switching.
-- **UI helpers (`src/ui/`)** — `danger_sign_labels.py` (tile metadata), `patient_context.py` (form→model), `refer_reason.py` (human reason lines).
+- **Streamlit app (`app.py`)** — renders form/result; owns `st.session_state` view switching; shows comorbidity section when age band ∈ `COMORBIDITY_AGE_BANDS`.
+- **UI helpers (`src/ui/`)** — `danger_sign_labels.py` (tile metadata), `patient_context.py` (form→model, six age bands), `comorbidity_options.py` (organ-system toggles for 15+), `refer_reason.py` (human reason lines).
 - **Decision engine (`src/decision_engine/`)** — `engine.py` orchestrator + `sepsis_screen.py` rules over `models.py`.
 - **Shared label map (`DANGER_SIGN_LABELS`)** — single source of truth for reason wording.
 
@@ -101,16 +106,34 @@ flowchart TD
 - **Why this choice:** Validation at the boundary; enums prevent invalid decisions/urgencies/consciousness states.
 - **Interface:** `PatientContext`, `VitalSigns`, `DangerSigns`, `ConsciousnessLevel`, `Comorbidity`, `TriageDecision`, `ReferralUrgency`, `FebrileAssessment`, `DANGER_SIGN_LABELS`.
 
+### Comorbidity options — `src/ui/comorbidity_options.py`
+
+- **Responsibility:** Define the nine underlying-disease toggles grouped by organ system; gate visibility to adolescent/adult/elderly age bands.
+- **Tech choice:** Frozen dataclass list + `options_by_system()` grouper.
+- **Why this choice:** Keeps UI metadata out of `app.py`; 1:1 mapping to `Comorbidity` enum values.
+- **Interface:** `COMORBIDITY_OPTIONS`, `COMORBIDITY_AGE_BANDS`, `options_by_system() -> dict[str, list[ComorbidityOption]]`.
+
 ### Streamlit UI — `app.py` + `src/ui/`
 
-- **Responsibility:** Render form/result, map tiles → context, build the human reason line, manage form↔card state.
+- **Responsibility:** Render form/result, map tiles → context, collect comorbidities for 15+, build the human reason line, manage form↔card state.
 - **Tech choice:** Streamlit; `DANGER_SIGN_TILES` dataclass list for tile metadata.
 - **Why this choice:** Fastest path to a mobile-friendly, deployable demo with no frontend build chain.
-- **Interface:** `build_patient_context(...)`, `build_refer_reason(referral_reasons, urgency) -> str`.
+- **Interface:** `build_patient_context(age_band, has_fever, fever_duration_days, selected_tiles, comorbidities=None)`, `build_refer_reason(referral_reasons, urgency) -> str`.
 
 ## 6. Data model
 
 ```python
+class Comorbidity(str, Enum):
+    HIV = "hiv"
+    IMMUNOSUPPRESSION = "immunosuppression"
+    SEVERE_MALNUTRITION = "severe_malnutrition"
+    SICKLE_CELL = "sickle_cell"
+    CHRONIC_HEART_DISEASE = "chronic_heart_disease"
+    CHRONIC_LUNG_DISEASE = "chronic_lung_disease"
+    CHRONIC_KIDNEY_DISEASE = "chronic_kidney_disease"
+    PREGNANCY = "pregnancy"
+    RECENT_SURGERY_OR_WOUND = "recent_surgery_or_wound"
+
 class DangerSigns(BaseModel):
     unable_to_drink_or_breastfeed: bool = False
     vomits_everything: bool = False
@@ -143,6 +166,7 @@ class FebrileAssessment(BaseModel):
 - No indexing / no tables — `st.session_state` holds the current `FebrileAssessment` only.
 - Retention: session-scoped; cleared on "New patient" or browser close. No PII leaves the device.
 - `referral_reasons` are stable string codes (e.g. `imci:convulsions`, `neonate_fever`); human wording is resolved via `DANGER_SIGN_LABELS`.
+- UI age bands map to representative `age_months`: 1, 24, 96, 192, 480, 840.
 
 ## 7. API surface
 
@@ -150,10 +174,17 @@ FeverGate has no network API. The internal call graph:
 
 ### `evaluate_febrile_patient(ctx: PatientContext) -> FebrileAssessment`
 
-- **Input:** A validated `PatientContext`.
+- **Input:** A validated `PatientContext` (including optional `comorbidities` list).
 - **Output:** `FebrileAssessment` with `decision`, `urgency`, `monitoring_days`, sorted/deduped `referral_reasons`, and `rationale`.
 - **Errors:** Invalid inputs rejected at construction by pydantic.
 - **Latency budget:** Pure CPU, no I/O; p99 < 10ms.
+
+### `build_patient_context(...) -> PatientContext`
+
+- **Input:** Age band label, fever flags, danger-sign tile map, optional `list[Comorbidity]`.
+- **Output:** Validated `PatientContext` with mapped `age_months`, `DangerSigns`, and `consciousness`.
+- **Errors:** Unknown age band raises `KeyError` (Streamlit selectbox prevents this in normal use).
+- **Latency budget:** Negligible.
 
 ### `build_refer_reason(referral_reasons: list[str], urgency: ReferralUrgency) -> str`
 
@@ -176,6 +207,12 @@ FeverGate has no network API. The internal call graph:
 - **Considered:** Gating IMCI signs to neonate/under-5 (original protocol scope).
 - **Why we picked this:** The safety promise is "a positive danger sign always refers." An age gate let an 8-year-old with chest indrawing fall through to TREAT_AND_MONITOR — a false negative we refuse.
 
+### Decision: Comorbidities as composite modifiers vs. hard-refer triggers
+
+- **Chose:** Comorbidities add points to `_composite_score`; they do not bypass or weaken the IMCI hard-refer gate.
+- **Considered:** Hard-refer on any comorbidity selection; ignore comorbidities until vitals UI exists.
+- **Why we picked this:** Chronic heart/lung/kidney disease raises risk without being an emergency sign on its own. Hard-refer-on-toggle would over-refer every diabetic adult with a cold.
+
 ### Decision: uv + pyproject.toml vs. requirements.txt only
 
 - **Chose:** `uv` with `pyproject.toml` and `uv.lock` for reproducible dev environments.
@@ -192,6 +229,7 @@ FeverGate has no network API. The internal call graph:
 
 - **Clinical correctness of thresholds** — Likelihood: med — Mitigation: pin behavior with golden tests; flag for clinician review before field use.
 - **Over-referral in older children from all-age danger signs** — Likelihood: med — Accepted: false positives are tolerable; false negatives are not.
+- **Comorbidity UI only for 15+ misses sick child with sickle cell** — Likelihood: med — Accepted for v1; open product question to extend toggles for under-15.
 - **Streamlit rerun flicker on form→card snap** — Likelihood: low — Mitigation: gate rendering on single `show_result` flag.
 - **Reason wording drifts from engine codes** — Likelihood: low — Mitigation: `DANGER_SIGN_LABELS` consumed by both UI and tests.
 - **Misuse as a diagnosis tool** — Likelihood: med — Mitigation: explicit "screening only" caption in UI.
@@ -206,27 +244,29 @@ Runner: **pytest** via `uv run pytest tests/ -v`. Tests live in `tests/` with `p
 - `_age_band(age_months)` — boundaries: 1→neonate, 2→under5, 59/60, 144, 216, 780→elderly. **File:** `tests/test_sepsis_internals.py`
 - `_compute_qsofa(ctx)` — returns `None` under 12 years; for adults, ≥2 when lethargic + low SBP + high RR combine. **File:** `tests/test_sepsis_internals.py`
 - `_compute_news2(ctx)` — returns `None` when RR missing or under 12 years; high derangement pushes score ≥7. **File:** `tests/test_sepsis_internals.py`
-- `_composite_score(ctx)` — neonate age points, hypothermia, lethargy, comorbidities, prolonged fever, toxic appearance each surface in `score_components`. **File:** `tests/test_sepsis_internals.py`
+- `_composite_score(ctx)` — neonate age points, hypothermia, lethargy, comorbidities (HIV + pregnancy), prolonged fever, toxic appearance each surface in `score_components`. **File:** `tests/test_sepsis_internals.py`
 - `evaluate_febrile_patient(ctx)` — `monitoring_days == 3` only for `TREAT_AND_MONITOR`; `referral_reasons` sorted and deduplicated; rationale populated. **File:** `tests/test_engine.py`
-- `build_refer_reason(reasons, urgency)` in `src/ui/refer_reason.py` — `["imci:convulsions"]` + IMMEDIATE → `"Convulsions — refer immediately."`; SAME_DAY phrasing; dedupe; unknown-only fallback. **File:** `tests/test_refer_reason.py`
+- `build_refer_reason(reasons, urgency)` in `src/ui/refer_reason.py` — `["imci:convulsions"]` + IMMEDIATE → `"Convulsions — refer immediately."`; SAME_DAY phrasing; dedupe; unknown-only fallback; NEWS2 prefix label. **File:** `tests/test_refer_reason.py`
 - `DANGER_SIGN_LABELS` — every `imci:*` code emitted by `_imci_danger_signs` has a label entry. **File:** `tests/test_sepsis_internals.py`
-- Parametrized danger-sign safety net — 9 signs × 2 age bands → always REFER/REFER_IMMEDIATE. **File:** `tests/test_danger_signs.py`
+- Parametrized danger-sign safety net — 9 signs × 2 age bands → always REFER/REFER_IMMEDIATE; baseline guard that uncomplicated under-5 fever does not refer. **File:** `tests/test_danger_signs.py`
 
 **Integration tests (one per major flow):**
 - **Danger-sign refer flow** — convulsions at age 24 → `REFER_IMMEDIATE` with `convulsions` and `imci:convulsions` in reasons. **File:** `tests/test_integration_flows.py`
 - **Neonate fever refer flow** — age 1 with fever → `REFER_IMMEDIATE` with `neonate_fever`. **File:** `tests/test_integration_flows.py`
 - **Uncomplicated fever monitor flow** — under-5, mild vitals, no danger signs → `TREAT_AND_MONITOR`, `monitoring_days == 3`. **File:** `tests/test_integration_flows.py`
-- **Adult deterioration flow** — adult with qSOFA-positive vitals → `REFER` or `REFER_IMMEDIATE`. **File:** `tests/test_integration_flows.py`
-- **UI→engine path** — `build_patient_context()` with convulsions tile selected → referral decision. **File:** `tests/test_integration_flows.py`
+- **Adult deterioration flow** — adult with qSOFA-positive vitals + lethargy → `REFER` or `REFER_IMMEDIATE`. **File:** `tests/test_integration_flows.py`
+- **UI→engine danger-sign path** — `build_patient_context()` with convulsions tile selected → referral decision. **File:** `tests/test_integration_flows.py`
+- **UI→engine adult comorbidity path** — `build_patient_context(age_band="18–64 years", comorbidities=[CHRONIC_LUNG_DISEASE, CHRONIC_HEART_DISEASE])` → correct `age_months` and comorbidities on context. **File:** `tests/test_integration_flows.py`
 
 **Deliberately not tested (and why):**
-- Streamlit rendering, CSS, tile layout, and the snap transition — visual/runtime UI; verified by human walkthrough.
-- Exact composite-score arithmetic beyond documented thresholds — we test decision boundaries, not every internal point value.
+- Streamlit rendering, CSS, tile layout, comorbidity progressive-disclosure animation, and the snap transition — visual/runtime UI; verified by human walkthrough.
+- `options_by_system()` grouping order and emoji icons — presentational; enum mapping is what matters clinically.
+- Exact composite-score arithmetic beyond documented thresholds — we test decision boundaries and component presence, not every internal point value.
 - pydantic's own validation internals — trust the library.
 - Clinical accuracy of WHO thresholds — clinician review, not a unit test.
 - Gemini / LLM API calls — no LLM in v1 decision path; nothing to mock.
 
-**Stack default:** Python → `pytest`. Run: `uv run pytest tests/ -v`. Current suite: **84 tests, all passing**.
+**Stack default:** Python → `pytest`. Run: `uv run pytest tests/ -v`. Current suite: **85 tests, all passing**.
 
 ## 11. Rollout & monitoring
 
@@ -243,6 +283,7 @@ Runner: **pytest** via `uv run pytest tests/ -v`. Tests live in `tests/` with `p
 
 ## 13. Open questions
 
+- [ ] Should comorbidity toggles appear for under-15 (sickle cell, severe malnutrition)? — Product + Clinical
 - [ ] Should lethargic/unconscious be one tri-state input or two tiles? — UX + Eng
 - [ ] Do we add a session-local encounter log (SQLite) in v1? — Product owner
 - [ ] Which malaria-endemicity / presumptive-treatment rules enter the TREAT branch? — Clinical reviewer
@@ -254,4 +295,5 @@ Runner: **pytest** via `uv run pytest tests/ -v`. Tests live in `tests/` with `p
 - **No database or cloud registry** — must not block the bedside decision.
 - **No LLM in the decision** — only ever a non-deciding explanation layer, later.
 - **No lab/RDT input, SMS/notifications, accounts** — explicit product non-goals.
+- **No vitals-entry UI in v1** — engine supports vitals programmatically; UI deferred.
 - **No offline-installable PWA in v1** — Streamlit demo first.

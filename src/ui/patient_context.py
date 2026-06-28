@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
-from decision_engine.models import ConsciousnessLevel, DangerSigns, PatientContext, VitalSigns
+from decision_engine.models import (
+    Comorbidity,
+    ConsciousnessLevel,
+    DangerSigns,
+    PatientContext,
+    VitalSigns,
+)
 from ui.danger_sign_labels import DANGER_SIGN_TILES
 
 AGE_BANDS: dict[str, int] = {
     "Under 2 months": 1,
     "2 months \u2013 5 years": 24,
     "5\u201315 years": 96,
-    "Adult": 480,
+    "15\u201317 years": 192,
+    "18\u201364 years": 480,
+    "65+ years": 840,
 }
 
 
@@ -18,6 +26,7 @@ def build_patient_context(
     has_fever: bool,
     fever_duration_days: int,
     selected_tiles: dict[str, bool],
+    comorbidities: list[Comorbidity] | None = None,
 ) -> PatientContext:
     danger_kwargs: dict[str, bool] = {}
     consciousness = ConsciousnessLevel.ALERT
@@ -40,6 +49,7 @@ def build_patient_context(
         has_fever=has_fever,
         fever_duration_days=fever_duration_days,
         consciousness=consciousness,
+        comorbidities=comorbidities or [],
         danger_signs=DangerSigns(**danger_kwargs),
         vitals=VitalSigns(),
     )

@@ -2,6 +2,7 @@
 
 from decision_engine import evaluate_febrile_patient
 from decision_engine.models import (
+    Comorbidity,
     ConsciousnessLevel,
     DangerSigns,
     PatientContext,
@@ -71,3 +72,19 @@ def test_ui_patient_context_builder_convulsions():
     )
     result = evaluate_febrile_patient(ctx)
     assert result.decision in REFER
+
+
+def test_ui_patient_context_builder_adult_comorbidities():
+    ctx = build_patient_context(
+        age_band="18\u201364 years",
+        has_fever=True,
+        fever_duration_days=2,
+        selected_tiles={},
+        comorbidities=[
+            Comorbidity.CHRONIC_LUNG_DISEASE,
+            Comorbidity.CHRONIC_HEART_DISEASE,
+        ],
+    )
+    assert ctx.age_months == 480
+    assert Comorbidity.CHRONIC_LUNG_DISEASE in ctx.comorbidities
+    assert Comorbidity.CHRONIC_HEART_DISEASE in ctx.comorbidities
