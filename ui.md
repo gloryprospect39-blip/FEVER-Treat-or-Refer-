@@ -31,7 +31,7 @@ Two screens, and they are really two states of one surface. There is intentional
 
 **Layout (top to bottom):**
 1. Title ("FeverGate") + one-line caption ("Point-of-care treat / refer — screening only").
-2. Age band selector (6 options) — single choice, defaults to 2 months–5 years. Selecting a band sets the pathway:
+2. **Two-step age selector** — first `Child (under 15)` / `Adult (15+)`, then age band within that group (3 options each). Defaults: 2 months–5 years / 18–64 years. Selecting a band sets the pathway:
    - **Pediatric pathway (<15):** Under 2 months · 2 months – 5 years · 5–15 years
    - **Adult pathway (15+):** 15–17 years · 18–64 years · 65+ years
 3. Fever toggle (default on) + fever-duration number input, side by side — shown on both pathways.

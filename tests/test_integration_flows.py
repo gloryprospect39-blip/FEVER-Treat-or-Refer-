@@ -63,6 +63,32 @@ def test_adult_deterioration_flow():
     assert result.sepsis.qsofa_score >= 2
 
 
+def test_adult_comorbidity_deterioration_via_builder():
+    ctx = build_patient_context(
+        age_band="18\u201364 years",
+        has_fever=True,
+        fever_duration_days=1,
+        selected_tiles={},
+        comorbidities=[Comorbidity.CHRONIC_LUNG_DISEASE],
+        systolic_bp=95,
+        respiratory_rate=24,
+    )
+    ctx = ctx.model_copy(update={"consciousness": ConsciousnessLevel.LETHARGIC})
+    result = evaluate_febrile_patient(ctx)
+    assert result.decision in REFER
+
+
+def test_pediatric_pathway_strips_stale_adult_comorbidities():
+    ctx = build_patient_context(
+        age_band="5\u201315 years",
+        has_fever=True,
+        fever_duration_days=1,
+        selected_tiles={},
+        comorbidities=[Comorbidity.CHRONIC_HEART_DISEASE],
+    )
+    assert ctx.comorbidities == []
+
+
 def test_ui_patient_context_builder_convulsions():
     ctx = build_patient_context(
         age_band="2 months \u2013 5 years",

@@ -17,8 +17,14 @@ from ui.clinic_context import ClinicContext, MalariaEndemicity
 from ui.comorbidity_options import comorbidity_options_for_band, options_by_system
 from ui.danger_sign_labels import DANGER_SIGN_TILES
 from ui.encounter_log import log_encounter
-from ui.patient_context import AGE_BANDS, build_patient_context
-from ui.pathways import is_pediatric_pathway
+from ui.patient_context import build_patient_context
+from ui.pathways import (
+    PATHWAY_ADULT,
+    PATHWAY_CHILD,
+    age_bands_for_pathway,
+    default_age_band_index,
+    is_pediatric_pathway,
+)
 from ui.refer_reason import build_refer_reason
 from ui.teleconsultation import schedule_teleconsultation_note, teleconsultation_dial_url
 from ui.treatment_plan import build_treatment_plan
@@ -104,11 +110,19 @@ def _render_comorbidities(age_band: str) -> list[Comorbidity]:
     selected: list[Comorbidity] = []
     if is_pediatric_pathway(age_band):
         st.subheader("High-risk conditions")
-        st.caption("Sickle cell disease or severe malnutrition — tap if present.")
-    else:
-        st.subheader("Underlying diseases")
-        st.caption("Tap any that apply — grouped by organ system.")
+        st.caption("Sickle cell or severe malnutrition — tap if present.")
+        comorb_cols = st.columns(2)
+        for index, option in enumerate(options):
+            with comorb_cols[index % 2]:
+                if st.toggle(
+                    f"{option.icon} {option.label}",
+                    key=f"comorb_{option.comorbidity.value}",
+                ):
+                    selected.append(option.comorbidity)
+        return selected
 
+    st.subheader("Underlying diseases")
+    st.caption("Tap any that apply — grouped by organ system.")
     for system, system_options in options_by_system(age_band).items():
         st.markdown(f"**{system}**")
         comorb_cols = st.columns(2)
@@ -122,13 +136,30 @@ def _render_comorbidities(age_band: str) -> list[Comorbidity]:
     return selected
 
 
+def _render_age_selector() -> str:
+    pathway = st.radio(
+        "Patient",
+        [PATHWAY_CHILD, PATHWAY_ADULT],
+        horizontal=True,
+        index=0,
+        key="pathway_group",
+    )
+    bands = age_bands_for_pathway(pathway)
+    return st.radio(
+        "Age",
+        list(bands),
+        index=default_age_band_index(pathway),
+        key=f"age_band_{pathway}",
+    )
+
+
 def render_form() -> None:
     st.title("FeverGate")
     st.caption("Point-of-care treat / refer \u2014 screening only.")
 
     _render_clinic_context()
 
-    band = st.radio("Age band", list(AGE_BANDS.keys()), index=1)
+    band = _render_age_selector()
 
     fever_col, dur_col = st.columns(2)
     with fever_col:
