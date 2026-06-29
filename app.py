@@ -13,9 +13,10 @@ import streamlit as st
 
 from decision_engine import evaluate_febrile_patient
 from decision_engine.models import Comorbidity, TriageDecision
-from ui.comorbidity_options import COMORBIDITY_AGE_BANDS, options_by_system
+from ui.comorbidity_options import options_by_system
 from ui.danger_sign_labels import DANGER_SIGN_TILES
 from ui.patient_context import AGE_BANDS, build_patient_context
+from ui.pathways import is_adult_pathway
 from ui.refer_reason import build_refer_reason
 
 CARD_CSS = """
@@ -75,10 +76,10 @@ def render_form() -> None:
             )
 
     selected_comorbidities: list[Comorbidity] = []
-    if band in COMORBIDITY_AGE_BANDS:
+    if is_adult_pathway(band):
         st.subheader("Underlying diseases")
         st.caption("Tap any that apply — grouped by organ system.")
-        for system, options in options_by_system().items():
+        for system, options in options_by_system(band).items():
             st.markdown(f"**{system}**")
             comorb_cols = st.columns(2)
             for index, option in enumerate(options):

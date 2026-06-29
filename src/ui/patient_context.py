@@ -9,16 +9,26 @@ from decision_engine.models import (
     PatientContext,
     VitalSigns,
 )
+from ui.comorbidity_options import filter_comorbidities_for_band
 from ui.danger_sign_labels import DANGER_SIGN_TILES
+from ui.pathways import (
+    ADULT_AGE_BANDS,
+    AGE_BANDS,
+    COMORBIDITY_AGE_BANDS,
+    PEDIATRIC_AGE_BANDS,
+    is_adult_pathway,
+    is_pediatric_pathway,
+)
 
-AGE_BANDS: dict[str, int] = {
-    "Under 2 months": 1,
-    "2 months \u2013 5 years": 24,
-    "5\u201315 years": 96,
-    "15\u201317 years": 192,
-    "18\u201364 years": 480,
-    "65+ years": 840,
-}
+__all__ = [
+    "AGE_BANDS",
+    "ADULT_AGE_BANDS",
+    "COMORBIDITY_AGE_BANDS",
+    "PEDIATRIC_AGE_BANDS",
+    "build_patient_context",
+    "is_adult_pathway",
+    "is_pediatric_pathway",
+]
 
 
 def build_patient_context(
@@ -44,12 +54,16 @@ def build_patient_context(
         ):
             consciousness = ConsciousnessLevel.LETHARGIC
 
+    allowed_comorbidities = filter_comorbidities_for_band(
+        age_band, comorbidities or []
+    )
+
     return PatientContext(
         age_months=AGE_BANDS[age_band],
         has_fever=has_fever,
         fever_duration_days=fever_duration_days,
         consciousness=consciousness,
-        comorbidities=comorbidities or [],
+        comorbidities=allowed_comorbidities,
         danger_signs=DangerSigns(**danger_kwargs),
         vitals=VitalSigns(),
     )
