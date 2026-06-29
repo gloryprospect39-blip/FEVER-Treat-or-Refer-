@@ -80,3 +80,8 @@ DANGER_SIGN_TILES: list[DangerSignTile] = [
         danger_field="severe_palmar_pallor",
     ),
 ]
+
+
+def danger_sign_tiles_for_band(_age_band: str) -> list[DangerSignTile]:
+    """Return danger-sign tiles — same nine IMCI tiles for every age band (ui.md)."""
+    return DANGER_SIGN_TILES
