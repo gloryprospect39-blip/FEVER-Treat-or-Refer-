@@ -13,11 +13,15 @@ import streamlit as st
 
 from decision_engine import evaluate_febrile_patient
 from decision_engine.models import Comorbidity, TriageDecision
-from ui.comorbidity_options import options_by_system
+from ui.clinic_context import ClinicContext, MalariaEndemicity
+from ui.comorbidity_options import comorbidity_options_for_band, options_by_system
 from ui.danger_sign_labels import DANGER_SIGN_TILES
+from ui.encounter_log import log_encounter
 from ui.patient_context import AGE_BANDS, build_patient_context
-from ui.pathways import is_adult_pathway
+from ui.pathways import is_pediatric_pathway
 from ui.refer_reason import build_refer_reason
+from ui.teleconsultation import schedule_teleconsultation_note, teleconsultation_dial_url
+from ui.treatment_plan import build_treatment_plan
 
 CARD_CSS = """
 <style>
@@ -38,8 +42,15 @@ CARD_CSS = """
 .triage-card .reason {
     font-size: 1.25rem;
     font-weight: 500;
-    margin: 0;
+    margin: 0 0 0.6rem 0;
     line-height: 1.4;
+}
+.triage-card .plan {
+    font-size: 1.05rem;
+    font-weight: 400;
+    margin: 0;
+    line-height: 1.45;
+    opacity: 0.95;
 }
 .triage-card.refer { background: #c0392b; }
 .triage-card.monitor { background: #d68910; }
@@ -48,13 +59,74 @@ CARD_CSS = """
 """
 
 
+def _clinic_context_from_session() -> ClinicContext:
+    return ClinicContext(
+        malaria_endemicity=MalariaEndemicity(
+            st.session_state.get("malaria_endemicity", MalariaEndemicity.HIGH.value)
+        ),
+        act_in_stock=st.session_state.get("act_in_stock", True),
+        amoxicillin_in_stock=st.session_state.get("amoxicillin_in_stock", False),
+        paracetamol_in_stock=st.session_state.get("paracetamol_in_stock", True),
+    )
+
+
 def reset_to_form() -> None:
-    st.session_state.clear()
+    st.session_state["show_result"] = False
+    st.session_state.pop("assessment", None)
+    st.session_state.pop("patient_context", None)
+    st.session_state.pop("treatment_plan", None)
+
+
+def _render_clinic_context() -> None:
+    with st.expander("Clinic context (today's stock)", expanded=False):
+        endemicity = st.radio(
+            "Malaria endemicity",
+            [MalariaEndemicity.HIGH.value, MalariaEndemicity.LOW.value],
+            index=0,
+            horizontal=True,
+            key="malaria_endemicity",
+        )
+        stock_col1, stock_col2, stock_col3 = st.columns(3)
+        with stock_col1:
+            st.toggle("ACT in stock", value=True, key="act_in_stock")
+        with stock_col2:
+            st.toggle("Amoxicillin in stock", value=False, key="amoxicillin_in_stock")
+        with stock_col3:
+            st.toggle("Paracetamol in stock", value=True, key="paracetamol_in_stock")
+        st.caption(f"Endemicity: {endemicity} — treatment plans respect stock on hand.")
+
+
+def _render_comorbidities(age_band: str) -> list[Comorbidity]:
+    options = comorbidity_options_for_band(age_band)
+    if not options:
+        return []
+
+    selected: list[Comorbidity] = []
+    if is_pediatric_pathway(age_band):
+        st.subheader("High-risk conditions")
+        st.caption("Sickle cell disease or severe malnutrition — tap if present.")
+    else:
+        st.subheader("Underlying diseases")
+        st.caption("Tap any that apply — grouped by organ system.")
+
+    for system, system_options in options_by_system(age_band).items():
+        st.markdown(f"**{system}**")
+        comorb_cols = st.columns(2)
+        for index, option in enumerate(system_options):
+            with comorb_cols[index % 2]:
+                if st.toggle(
+                    f"{option.icon} {option.label}",
+                    key=f"comorb_{option.comorbidity.value}",
+                ):
+                    selected.append(option.comorbidity)
+    return selected
 
 
 def render_form() -> None:
     st.title("FeverGate")
     st.caption("Point-of-care treat / refer \u2014 screening only.")
+
+    _render_clinic_context()
 
     band = st.radio("Age band", list(AGE_BANDS.keys()), index=1)
 
@@ -66,6 +138,36 @@ def render_form() -> None:
             "Fever duration (days)", min_value=0, max_value=60, value=1, step=1
         )
 
+    with st.expander("Vitals (optional)", expanded=False):
+        vit_col1, vit_col2, vit_col3 = st.columns(3)
+        with vit_col1:
+            systolic_bp = st.number_input(
+                "Systolic BP (mmHg)",
+                min_value=0,
+                max_value=300,
+                value=0,
+                step=1,
+                help="Leave at 0 if not measured.",
+            )
+        with vit_col2:
+            spo2 = st.number_input(
+                "SpO\u2082 (%)",
+                min_value=0,
+                max_value=100,
+                value=0,
+                step=1,
+                help="Leave at 0 if not measured.",
+            )
+        with vit_col3:
+            respiratory_rate = st.number_input(
+                "Respiratory rate (/min)",
+                min_value=0,
+                max_value=80,
+                value=0,
+                step=1,
+                help="Leave at 0 if not measured.",
+            )
+
     st.subheader("Danger signs")
     selected: dict[str, bool] = {}
     columns = st.columns(2)
@@ -75,40 +177,62 @@ def render_form() -> None:
                 f"{tile.icon} {tile.label}", key=f"tile_{tile.trigger_code}"
             )
 
-    selected_comorbidities: list[Comorbidity] = []
-    if is_adult_pathway(band):
-        st.subheader("Underlying diseases")
-        st.caption("Tap any that apply — grouped by organ system.")
-        for system, options in options_by_system(band).items():
-            st.markdown(f"**{system}**")
-            comorb_cols = st.columns(2)
-            for index, option in enumerate(options):
-                with comorb_cols[index % 2]:
-                    if st.toggle(
-                        f"{option.icon} {option.label}",
-                        key=f"comorb_{option.comorbidity.value}",
-                    ):
-                        selected_comorbidities.append(option.comorbidity)
+    selected_comorbidities = _render_comorbidities(band)
 
     if st.button("Assess patient", type="primary", use_container_width=True):
         try:
+            clinic = _clinic_context_from_session()
             ctx = build_patient_context(
                 age_band=band,
                 has_fever=has_fever,
                 fever_duration_days=int(fever_days),
                 selected_tiles=selected,
                 comorbidities=selected_comorbidities,
+                systolic_bp=systolic_bp or None,
+                spo2_percent=spo2 or None,
+                respiratory_rate=respiratory_rate or None,
             )
-            st.session_state["assessment"] = evaluate_febrile_patient(ctx)
+            assessment = evaluate_febrile_patient(ctx)
+            plan = build_treatment_plan(ctx, assessment, clinic)
+            st.session_state["patient_context"] = ctx
+            st.session_state["clinic_context"] = clinic
+            st.session_state["assessment"] = assessment
+            st.session_state["treatment_plan"] = plan
             st.session_state["show_result"] = True
             st.rerun()
         except Exception:
             st.error("Couldn't assess \u2014 check inputs and retry.")
 
 
+def _render_card_html(
+    css_class: str, decision: str, reason: str, plan_detail: str
+) -> str:
+    return (
+        f'<div class="triage-card {css_class}">'
+        f'<p class="decision">{decision}</p>'
+        f'<p class="reason">{reason}</p>'
+        f'<p class="plan">{plan_detail}</p>'
+        f"</div>"
+    )
+
+
+def _log_action(action: str) -> None:
+    ctx = st.session_state.get("patient_context")
+    assessment = st.session_state.get("assessment")
+    clinic = st.session_state.get("clinic_context", _clinic_context_from_session())
+    if ctx is not None and assessment is not None:
+        log_encounter(ctx, assessment, clinic, action_taken=action)
+
+
+def _finish_patient(action: str | None = None) -> None:
+    _log_action(action or "new_patient")
+    reset_to_form()
+
+
 def render_result() -> None:
     assessment = st.session_state.get("assessment")
-    if assessment is None:
+    plan = st.session_state.get("treatment_plan")
+    if assessment is None or plan is None:
         st.session_state["show_result"] = False
         st.rerun()
         return
@@ -119,36 +243,74 @@ def render_result() -> None:
     if decision in {TriageDecision.REFER_IMMEDIATE, TriageDecision.REFER}:
         reason = build_refer_reason(assessment.referral_reasons, assessment.urgency)
         st.markdown(
-            f'<div class="triage-card refer">'
-            f'<p class="decision">REFER</p>'
-            f'<p class="reason">{reason}</p>'
-            f"</div>",
+            _render_card_html("refer", "REFER", reason, plan.detail),
             unsafe_allow_html=True,
         )
-        st.button("Refer now", type="primary", use_container_width=True)
-        st.button("\u2190 New patient", use_container_width=True, on_click=reset_to_form)
+        if st.button(
+            plan.primary_action_label,
+            type="primary",
+            use_container_width=True,
+            key="refer_call",
+        ):
+            _log_action("teleconsultation_call")
+            st.info(
+                f"Dial teleconsultation desk: "
+                f"[{teleconsultation_dial_url().replace('tel:', '')}]({teleconsultation_dial_url()})"
+            )
+        st.button(
+            "\u2190 New patient",
+            use_container_width=True,
+            key="refer_new",
+            on_click=_finish_patient,
+            kwargs={"action": "refer_new_patient"},
+        )
         return
 
     if decision == TriageDecision.TREAT_AND_MONITOR:
         days = assessment.monitoring_days
+        reason = f"Treat now and re-check in {days} days."
         st.markdown(
-            f'<div class="triage-card monitor">'
-            f'<p class="decision">TREAT &amp; MONITOR</p>'
-            f'<p class="reason">Treat now and re-check in {days} days.</p>'
-            f"</div>",
+            _render_card_html("monitor", "TREAT &amp; MONITOR", reason, plan.detail),
             unsafe_allow_html=True,
         )
-        st.button("\u2190 New patient", use_container_width=True, on_click=reset_to_form)
+        if st.button(
+            plan.primary_action_label,
+            type="primary",
+            use_container_width=True,
+            key="monitor_schedule",
+        ):
+            note = schedule_teleconsultation_note(days)
+            _log_action(f"schedule_teleconsultation: {note}")
+            st.success(note)
+        st.button(
+            "\u2190 New patient",
+            use_container_width=True,
+            key="monitor_new",
+            on_click=_finish_patient,
+            kwargs={"action": "monitor_new_patient"},
+        )
         return
 
+    reason = plan.summary
     st.markdown(
-        '<div class="triage-card treat">'
-        '<p class="decision">TREAT</p>'
-        '<p class="reason">No fever and low-risk screen.</p>'
-        "</div>",
+        _render_card_html("treat", "TREAT", reason, plan.detail),
         unsafe_allow_html=True,
     )
-    st.button("\u2190 New patient", use_container_width=True, on_click=reset_to_form)
+    if st.button(
+        plan.primary_action_label,
+        type="primary",
+        use_container_width=True,
+        key="treat_start",
+    ):
+        _log_action("start_treatment")
+        st.success("Treatment plan acknowledged.")
+    st.button(
+        "\u2190 New patient",
+        use_container_width=True,
+        key="treat_new",
+        on_click=_finish_patient,
+        kwargs={"action": "treat_new_patient"},
+    )
 
 
 def main() -> None:

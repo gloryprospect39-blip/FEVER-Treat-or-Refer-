@@ -18,42 +18,50 @@ Who is this for, and what are they doing/feeling **right before** they open the 
 ## 2. The contract (I/O)
 
 - **Input:** A bedside tap-through form. Six age bands that route into two clinical pathways:
-  - **Pediatric pathway (<15 years):** Under 2 months / 2 months–5 years / 5–15 years — fever yes/no plus duration; nine IMCI danger-sign toggles. No underlying-disease section.
-  - **Adult pathway (15+ years):** 15–17 years / 18–64 years / 65+ years — same fever and danger-sign inputs, plus underlying-disease toggles grouped by organ system (heart, lungs, kidneys, immune, blood, nutrition, other).
-- **Output:** One full-screen decision card. REFER (red, with the named reason and urgency), TREAT (green), or TREAT AND MONITOR (amber, re-check flag). One primary action button per card.
-- **The loop:** One patient = one decision. Worker selects age band (which sets the pathway), taps signs and (if adult) comorbidities → gets the card → acts → taps "New patient" and the form resets. Repeat down the line of waiting patients.
+  - **Pediatric pathway (<15 years):** Under 2 months / 2 months–5 years / 5–15 years — fever yes/no plus duration; nine IMCI danger-sign toggles; optional numeric vitals (BP, SpO₂, RR) when available; reduced comorbidity block (sickle cell disease, severe malnutrition only).
+  - **Adult pathway (15+ years):** 15–17 years / 18–64 years / 65+ years — same fever, danger-sign, and vitals inputs, plus full underlying-disease toggles grouped by organ system (heart, lungs, kidneys, immune, blood, nutrition, other).
+  - **Clinic context (set once per session):** malaria endemicity (high / low) and which antimalarials and antibiotics are in stock today — stock is limited and unpredictable.
+- **Output:** One full-screen decision card with the subsequent appropriate medical treatment according to guidelines:
+  - **REFER (red)** — named reason, urgency (immediate / same day), and primary action to **call teleconsultation now** (connected to the clinic's teleconsultation department).
+  - **TREAT (green)** — start the guideline-appropriate treatment plan (e.g. presumptive ACT in a malaria-endemic zone when stock allows; antibiotics or supportive care when indicated and available).
+  - **TREAT AND MONITOR (amber)** — treat now per guidelines, re-check flag with window (e.g. 3 days), and primary action to **schedule a teleconsultation call**.
+- **The loop:** One patient = one decision. Worker selects age band (which sets the pathway), taps signs, vitals, and comorbidities → gets the card → acts (treat, refer, or schedule follow-up) → encounter is saved locally as a fever-registry row → taps "New patient" and the form resets. Repeat down the line of waiting patients. Registry capture must never block or slow the bedside decision.
 
 ## 3. The magical moment
 
-> "I picked the right age band, tapped the signs, and it told me refer now — with exactly why."
+> "I picked the right age band, tapped the signs, and it told me exactly what to do — give ACT, call teleconsultation, or re-check in three days — with exactly why."
 
 If you can't write this sentence, the product doesn't have magic yet. Go back to section 1.
 
 ## 4. Scope: what we ARE building (v1)
 
 - A mobile-friendly tap-through triage form completable in under 60 seconds
-- **Two age-routed clinical pathways** split at 15 years: pediatric (IMCI-first) and adult (IMCI danger signs + comorbidity modifiers)
+- **Two age-routed clinical pathways** split at 15 years: pediatric (IMCI-first + reduced comorbidities) and adult (IMCI danger signs + full comorbidity modifiers)
 - Six age bands in the selector; pathway is derived automatically from band selection
-- A deterministic rule engine (no LLM in the decision path) that returns REFER / TREAT / TREAT_AND_MONITOR
+- Optional numeric vitals entry (BP, SpO₂, RR) — feasible when a cuff or pulse oximeter is available; engine already scores qSOFA/NEWS2 when vitals are present
+- **Pediatric comorbidity capture:** sickle cell disease and severe malnutrition on the under-15 pathway (distinct from the adult organ-system block)
+- **Malaria endemicity** and **presumptive ACT drug plan** on the TREAT branch when endemicity is high and stock allows
+- Clinic stock context: antimalarials and antibiotics occasionally available — treatment recommendations respect what is on the shelf today
+- A deterministic rule engine (no LLM in the decision path) that returns REFER / TREAT / TREAT_AND_MONITOR with guideline-linked treatment plans
 - A danger-sign grid where any positive sign hard-triggers an immediate REFER at any age and on either pathway
-- System-wise underlying-disease toggles shown only on the adult pathway (15+)
-- A full-screen result card with one primary action and the referral reason named in plain language
+- A full-screen result card: decision color, named reason, urgency, **guideline-appropriate treatment plan**, and one primary action (call teleconsultation / start treatment / schedule teleconsultation)
+- **Teleconsultation integration:** REFER → immediate call to teleconsultation department; TREAT AND MONITOR → scheduled teleconsultation call
+- **Local fever registry:** each encounter saved on-device (timestamp, inputs, decision, action taken) — a side benefit that never blocks the core triage flow
 - A "New patient" reset so the worker can run patient after patient with zero friction
 
 ## 5. Scope: what we are NOT building
 
 - **No lab or rapid-test input** — deciding without one is the entire point; adding test results is a different product
-- **No SMS / push / notifications** — TREAT_AND_MONITOR is a decision flag in v1, not a delivery system
-- **No cloud database or fever registry** — local only; a registry must never block the bedside decision
+- **No SMS / push / notifications** — teleconsultation is initiated from the card (call / schedule); automated reminders are phase 2
+- **No cloud database or central fever registry in v1** — local on-device log only; sync to a district registry is phase 2 and must never block triage
 - **No accounts or login** — one worker, one device, zero friction
-- **No vitals entry UI (BP, SpO2, RR)** — v1 triages on danger signs and comorbidities; numeric vitals screens are deferred
-- **No comorbidity capture on the pediatric pathway** — sickle cell and severe malnutrition for under-15 are deferred; adult pathway owns comorbidities in v1
-- **No malaria endemicity / presumptive ACT drug plan in v1 UI** — treat pathways come next
+- **No two-way clinician chat in v1** — teleconsultation is outbound call / scheduled call, not an in-app messaging thread
+- **No antibiotics funding or logistics dashboard** — stock is a same-day toggle, not a supply-chain system
 - **No LLM in the decision** — an AI may explain the rule output later, but it never decides or overrides a REFER
 
 ## 6. The signature detail
 
-Age band selection is the fork in the road. Pick a pediatric band and the form stays lean: fever, duration, nine large icon-led danger-sign tiles — a lightning bolt for convulsions, a raised hand for "unable to drink." Pick an adult band and a second section slides in below: underlying diseases grouped by organ system — heart, lungs, kidneys — each a single tap, no medical jargon on the buttons. The moment a danger sign goes positive on either pathway, the screen does not celebrate or animate; it snaps to a calm, full-width red REFER card with the sign named in a single line: "Convulsions — refer immediately." The calm-to-urgent shift is the emotional design: routine taps until something is wrong, then zero ambiguity and one obvious next step.
+Age band selection is the fork in the road. Pick a pediatric band and the form stays lean: fever, duration, optional vitals, nine large icon-led danger-sign tiles, and two comorbidity toggles (sickle cell, severe malnutrition) — visually distinct from the adult organ-system block. Pick an adult band and the full underlying-disease section slides in below. The moment a danger sign goes positive on either pathway, the screen does not celebrate or animate; it snaps to a calm, full-width red REFER card with the sign named, urgency stated, and a single obvious button: **Call teleconsultation now.** On a green TREAT card in a malaria-endemic clinic with ACT in stock, the worker sees the presumptive drug plan (drug, dose band by age/weight) — not just "treat." On amber TREAT AND MONITOR, they see the re-check window and **Schedule teleconsultation.** The calm-to-urgent shift is the emotional design: routine taps until something is wrong, then zero ambiguity, one treatment plan, and one obvious next step.
 
 ## 7. Success: how we know it worked
 
@@ -63,11 +71,13 @@ Age band selection is the fork in the road. Pick a pediatric band and the form s
 
 ## 8. Open questions
 
-- [ ] Should the pediatric pathway gain a reduced comorbidity set (sickle cell, severe malnutrition) before field pilot?
-- [ ] Who owns TREAT_AND_MONITOR follow-up — the same worker on a re-check, a district supervisor, or no one in v1?
+- [ ] Teleconsultation handoff: phone number dial-out, VoIP link, or queue ticket to the district teleconsultation desk?
+- [ ] Which drugs beyond ACT are in scope for v1 stock logic: amoxicillin, paracetamol, both?
+- [ ] Geographic context: which malaria endemicity zone defines presumptive treatment rules for the demo?
+- [ ] Who owns the scheduled teleconsultation on TREAT_AND_MONITOR — same worker, district clinician, or rotating teleconsultation roster?
 - [ ] Is this a decision-support prototype for submission, or a field tool that needs MOH / clinician sign-off before use?
 
 ## 9. Handoff
 
-- **For UX:** The age-band → pathway fork must be obvious without extra taps; the pediatric form must not flash the adult comorbidity block on load; the REFER snap transition must read as urgent-but-calm on both pathways.
-- **For Eng:** Pathway routing (`is_pediatric_pathway` / `is_adult_pathway`) must gate UI sections and filter comorbidities at the context boundary; the rule engine's safety invariant (any danger sign → refer) must hold regardless of pathway.
+- **For UX:** The age-band → pathway fork must be obvious without extra taps; pediatric comorbidities (sickle cell, malnutrition) must look distinct from the adult organ-system block; vitals fields are optional and collapsible; result cards must show treatment plan + teleconsultation CTA, not decision color alone.
+- **For Eng:** Pathway routing gates UI sections and filters comorbidities at the context boundary; engine returns treatment-plan payloads alongside decisions; local encounter log writes asynchronously after card display; teleconsultation actions are dial/schedule stubs in v1 demo, real integration in pilot.
