@@ -37,6 +37,9 @@ def build_patient_context(
     fever_duration_days: int,
     selected_tiles: dict[str, bool],
     comorbidities: list[Comorbidity] | None = None,
+    systolic_bp: int | None = None,
+    spo2_percent: int | None = None,
+    respiratory_rate: int | None = None,
 ) -> PatientContext:
     danger_kwargs: dict[str, bool] = {}
     consciousness = ConsciousnessLevel.ALERT
@@ -65,5 +68,9 @@ def build_patient_context(
         consciousness=consciousness,
         comorbidities=allowed_comorbidities,
         danger_signs=DangerSigns(**danger_kwargs),
-        vitals=VitalSigns(),
+        vitals=VitalSigns(
+            systolic_bp=systolic_bp,
+            spo2_percent=spo2_percent,
+            respiratory_rate=respiratory_rate,
+        ),
     )

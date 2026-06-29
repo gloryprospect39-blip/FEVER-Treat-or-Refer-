@@ -18,8 +18,8 @@ If you can't write this paragraph, you don't have a defining interaction yet.
 
 ## 3. Screen inventory
 
-- **Triage form** — tap age band (routes to pediatric or adult pathway), fever, danger signs, and (adult pathway only) underlying diseases; one button to assess.
-- **Result card** — the full-screen REFER / TREAT / TREAT_AND_MONITOR decision with one primary action and a reset.
+- **Triage form** — tap age band (routes to pediatric or adult pathway), fever, optional vitals (BP, SpO₂, RR), danger signs, pathway-specific comorbidities, and session clinic context (malaria endemicity, stock); one button to assess.
+- **Result card** — the full-screen REFER / TREAT / TREAT_AND_MONITOR decision with guideline treatment plan, teleconsultation action, and a reset.
 
 Two screens, and they are really two states of one surface. There is intentionally no third screen.
 
@@ -35,18 +35,18 @@ Two screens, and they are really two states of one surface. There is intentional
    - **Pediatric pathway (<15):** Under 2 months · 2 months – 5 years · 5–15 years
    - **Adult pathway (15+):** 15–17 years · 18–64 years · 65+ years
 3. Fever toggle (default on) + fever-duration number input, side by side — shown on both pathways.
-4. "Danger signs" section header.
-5. Danger-sign grid — large icon+label tiles in two columns, each an independent on/off toggle (9 tiles, identical on both pathways).
-6. **Underlying diseases** section — **visible only on the adult pathway** (age bands 15–17, 18–64, or 65+):
-   - Section header + caption ("Tap any that apply — grouped by organ system.")
-   - Sub-headers by system: **Heart**, **Lungs**, **Kidneys**, **Immune**, **Blood**, **Nutrition**, **Other**
-   - Two-column toggle grid per system (nine conditions total)
-7. Primary button: "Assess patient", full width.
+4. **Vitals (optional, collapsible)** — systolic BP, SpO₂ (%), respiratory rate (breaths/min). Shown on both pathways when expanded; skipped when unavailable.
+5. "Danger signs" section header.
+6. Danger-sign grid — large icon+label tiles in two columns, each an independent on/off toggle (9 tiles, identical on both pathways).
+7. **Underlying diseases** — pathway-specific:
+   - **Pediatric pathway (<15):** compact block with two toggles only — **Sickle cell disease**, **Severe malnutrition** (visually distinct from adult organ-system layout).
+   - **Adult pathway (15+):** full section with sub-headers by system: **Heart**, **Lungs**, **Kidneys**, **Immune**, **Blood**, **Nutrition**, **Other** — nine conditions total in a two-column toggle grid per system.
+8. Primary button: "Assess patient", full width.
 
 **Key interactions:**
 - Tap a danger-sign tile → solid "on" state (both pathways).
-- Select a pediatric age band → underlying-disease section hides; any previously selected adult comorbidities are discarded on assess.
-- Select an adult age band → underlying-disease section expands inline below danger signs; no page navigation.
+- Select a pediatric age band → reduced comorbidity block (sickle cell, severe malnutrition) appears; adult organ-system block hides.
+- Select an adult age band → full underlying-disease section expands inline below danger signs; pediatric comorbidity block hides.
 - Tap "Assess patient" → build context (pathway-filtered comorbidities), run engine, switch to result card.
 
 **States:**
@@ -64,18 +64,27 @@ Two screens, and they are really two states of one surface. There is intentional
 **Layout (top to bottom):**
 1. Full-width color card: red (REFER), amber (TREAT & MONITOR), or green (TREAT).
 2. Decision word in large bold type.
-3. One-line reason (referrals: named trigger + urgency; monitor: re-check window; treat: low-risk note).
-4. Primary action: "Refer now" on referral only.
-5. Secondary: "← New patient" — resets form and clears pathway-specific state.
+3. One-line reason (referrals: named trigger + urgency; monitor: re-check window; treat: clinical indication).
+4. **Treatment plan block** — guideline-appropriate next step in plain language:
+   - REFER: transport / stabilization note if needed; no home treatment.
+   - TREAT: drug name, dose band by age, duration (e.g. presumptive ACT in endemic zone when stock allows).
+   - TREAT & MONITOR: same-day treatment + re-check date.
+5. Primary action (one per card):
+   - REFER → **"Call teleconsultation now"**
+   - TREAT → **"Start treatment"** (acknowledges plan on screen)
+   - TREAT & MONITOR → **"Schedule teleconsultation"**
+6. Secondary: "← New patient" — resets form, saves encounter to local fever registry.
 
 **Key interactions:**
-- Tap "Refer now" → acknowledgment (no-op in v1).
-- Tap "← New patient" → clears all state including comorbidity toggles and returns to default pediatric band.
+- Tap "Call teleconsultation now" → dial-out or queue handoff to teleconsultation department (stub in demo).
+- Tap "Start treatment" → acknowledgment; encounter logged locally.
+- Tap "Schedule teleconsultation" → schedule call for re-check window (stub in demo).
+- Tap "← New patient" → clears all state including comorbidity toggles and returns to default pediatric band; prior encounter retained in local registry.
 
 **States:**
-- **REFER (red):** Danger sign, neonate fever, or elevated adult screen — same visual regardless of pathway.
-- **TREAT & MONITOR (amber):** Low-risk pediatric or adult screen with re-check window.
-- **TREAT (green):** No fever and low-risk screen.
+- **REFER (red):** Danger sign, neonate fever, or elevated screen — named reason, urgency, immediate teleconsultation CTA.
+- **TREAT & MONITOR (amber):** Low-risk screen with re-check window, treatment plan, scheduled teleconsultation CTA.
+- **TREAT (green):** Guideline treatment plan (e.g. presumptive ACT when endemic + in stock).
 - **Error:** Falls back to form with inline message.
 
 ## 5. The user journey
@@ -106,19 +115,20 @@ Two screens, and they are really two states of one surface. There is intentional
 ## 8. What we are NOT designing
 
 - **No separate "pathway picker" screen** — age band is the only fork; workers never choose "pediatric mode" explicitly
-- **No comorbidity section on the pediatric pathway** in v1 (sickle cell / malnutrition deferred)
-- **No history / encounter list screen**
-- **No settings screen**
+- **No central registry / sync UI** — local log only; no upload screen in v1
+- **No history / encounter list screen** in v1 (registry is write-only background capture)
+- **No settings screen** beyond session clinic context (endemicity, stock)
 - **No onboarding flow**
-- **No vitals-entry UI**
-- **No AI-explainer panel**
+- **No two-way in-app clinician chat**
+- **No AI-explainer panel** in v1 (treatment plan text comes from the rule engine)
 
 ## 9. Open design questions
 
-- [ ] Should pediatric pathway gain a reduced comorbidity set (sickle cell, severe malnutrition) with distinct visual treatment from the adult block?
+- [ ] Collapsed-by-default vitals section vs. always-visible numeric fields?
 - [ ] Distinct visual treatment for neonate-fever referral vs danger-sign referral on the result card?
 - [ ] Should switching from adult to pediatric band clear comorbidity toggles immediately, or only on assess?
+- [ ] Teleconsultation CTA: `tel:` link, in-app dial pad, or ticket number to read aloud?
 
 ## 10. Handoff to engineering
 
-> Progressive disclosure of the comorbidity block must key off `is_adult_pathway(age_band)` without a full-page reload flicker; pediatric bands must never render the comorbidity section. Comorbidity toggles map 1:1 to `Comorbidity` enum values via `comorbidity_options_for_band()` and are filtered in `build_patient_context()` so pediatric assessments never carry adult comorbidities even if session state is stale.
+> Progressive disclosure of comorbidity blocks must key off `is_pediatric_pathway()` / `is_adult_pathway()` — pediatric shows sickle cell + severe malnutrition only; adult shows full organ-system grid. Comorbidity toggles map 1:1 to `Comorbidity` enum values via pathway-filtered option lists. Vitals map to `VitalSigns` on `PatientContext`. Result card renders `treatment_plan` from engine output plus teleconsultation CTA by decision type. Local registry write is fire-and-forget after card display.

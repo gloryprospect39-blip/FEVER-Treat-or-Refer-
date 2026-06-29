@@ -26,8 +26,11 @@ def test_all_age_bands_show_nine_danger_sign_tiles(age_band: str):
     assert danger_sign_tiles_for_band(age_band) == DANGER_SIGN_TILES
 
 
-def test_pediatric_pathway_has_no_comorbidity_options():
-    assert comorbidity_options_for_band("5\u201315 years") == []
+def test_pediatric_pathway_has_reduced_comorbidity_options():
+    options = comorbidity_options_for_band("5\u201315 years")
+    assert len(options) == 2
+    codes = {option.comorbidity for option in options}
+    assert codes == {Comorbidity.SICKLE_CELL, Comorbidity.SEVERE_MALNUTRITION}
 
 
 def test_adult_comorbidities_include_all_nine_options():
@@ -35,9 +38,17 @@ def test_adult_comorbidities_include_all_nine_options():
     assert len(options) == 9
 
 
-def test_filter_comorbidities_drops_all_for_pediatric_band():
+def test_filter_comorbidities_keeps_pediatric_allowed_only():
     filtered = filter_comorbidities_for_band(
         "5\u201315 years",
         [Comorbidity.SICKLE_CELL, Comorbidity.CHRONIC_HEART_DISEASE],
     )
-    assert filtered == []
+    assert filtered == [Comorbidity.SICKLE_CELL]
+
+
+def test_filter_comorbidities_drops_adult_only_for_pediatric():
+    filtered = filter_comorbidities_for_band(
+        "2 months \u2013 5 years",
+        [Comorbidity.SEVERE_MALNUTRITION, Comorbidity.HIV],
+    )
+    assert filtered == [Comorbidity.SEVERE_MALNUTRITION]

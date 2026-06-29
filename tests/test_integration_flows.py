@@ -88,3 +88,29 @@ def test_ui_patient_context_builder_adult_comorbidities():
     assert ctx.age_months == 480
     assert Comorbidity.CHRONIC_LUNG_DISEASE in ctx.comorbidities
     assert Comorbidity.CHRONIC_HEART_DISEASE in ctx.comorbidities
+
+
+def test_ui_patient_context_builder_pediatric_comorbidities():
+    ctx = build_patient_context(
+        age_band="5\u201315 years",
+        has_fever=True,
+        fever_duration_days=1,
+        selected_tiles={},
+        comorbidities=[Comorbidity.SICKLE_CELL, Comorbidity.CHRONIC_HEART_DISEASE],
+    )
+    assert ctx.comorbidities == [Comorbidity.SICKLE_CELL]
+
+
+def test_ui_patient_context_builder_vitals():
+    ctx = build_patient_context(
+        age_band="18\u201364 years",
+        has_fever=True,
+        fever_duration_days=1,
+        selected_tiles={},
+        systolic_bp=95,
+        spo2_percent=88,
+        respiratory_rate=24,
+    )
+    assert ctx.vitals.systolic_bp == 95
+    assert ctx.vitals.spo2_percent == 88
+    assert ctx.vitals.respiratory_rate == 24
