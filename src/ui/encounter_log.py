@@ -9,6 +9,7 @@ from typing import Any
 
 from decision_engine.models import FebrileAssessment, PatientContext
 
+from ui.catchment import require_catchment
 from ui.clinic_context import ClinicContext
 
 DEFAULT_LOG_PATH = Path(__file__).resolve().parents[2] / "data" / "encounters.jsonl"
@@ -26,15 +27,31 @@ def log_encounter(
     ctx: PatientContext,
     assessment: FebrileAssessment,
     clinic: ClinicContext,
+    catchment: str,
     action_taken: str | None = None,
     log_path: Path | None = None,
+    registered_patient_id: str | None = None,
+    registered_name: str | None = None,
+    registered_village: str | None = None,
 ) -> Path:
     """Append one encounter row. Returns the log file path."""
     path = log_path or DEFAULT_LOG_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    catchment_value = require_catchment(catchment)
+
+    registration: dict[str, Any] | None = None
+    if registered_patient_id:
+        registration = {
+            "id": registered_patient_id,
+            "name": registered_name,
+            "village": registered_village,
+        }
+
     row = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "catchment": catchment_value,
+        "registration": registration,
         "patient": _serialize_context(ctx),
         "clinic": clinic.model_dump(mode="json"),
         "assessment": _serialize_assessment(assessment),
