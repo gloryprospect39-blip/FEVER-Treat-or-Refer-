@@ -145,11 +145,31 @@ def is_adult_pathway(age_band: str) -> bool
 - **Responsibility:** Map form selections (tiles, age band, fever) to a validated `PatientContext`; strip disallowed comorbidities for pediatric bands.
 - **Tech choice:** Plain Python calling `filter_comorbidities_for_band()`.
 - **Why this choice:** Boundary between UI state and engine input — the last place to enforce pathway rules.
-- **Interface:** `build_patient_context(age_band, has_fever, fever_duration_days, selected_tiles, comorbidities=None) -> PatientContext`.
+- **Interface:** `build_patient_context(age_band, has_fever, fever_duration_days, selected_tiles, comorbidities=None, systolic_bp=None, spo2_percent=None, respiratory_rate=None) -> PatientContext`.
+
+### Treatment plan builder — `src/ui/treatment_plan.py`
+
+- **Responsibility:** Turn `FebrileAssessment` + `PatientContext` + `ClinicContext` into a `TreatmentPlan` (summary, detail, primary CTA label). Stock- and endemicity-aware presumptive ACT on treat/monitor branches.
+- **Interface:** `build_treatment_plan(ctx, assessment, clinic) -> TreatmentPlan`.
+
+### Local encounter log — `src/ui/encounter_log.py`
+
+- **Responsibility:** Append-only JSONL fever registry on device; fire-and-forget after card actions.
+- **Interface:** `log_encounter(ctx, assessment, clinic, action_taken=None, log_path=None) -> Path`.
+
+### Teleconsultation stubs — `src/ui/teleconsultation.py`
+
+- **Responsibility:** Dial URL and schedule-note copy for result-card CTAs (no in-app VoIP in v1).
+- **Interface:** `teleconsultation_dial_url()`, `schedule_teleconsultation_note(monitoring_days)`.
+
+### Optional explainer — `src/explainer/narrate.py`
+
+- **Responsibility:** Non-deciding Gemini narration of rule-engine output. **Not** in the decision path.
+- **Interface:** `narrate_assessment(assessment) -> str`; `get_client()` in `gemini_client.py` (patch in tests).
 
 ### Streamlit UI — `app.py` + `src/ui/`
 
-- **Responsibility:** Render form/result, gate comorbidity block on `is_adult_pathway(band)`, build human reason line, manage form↔card state.
+- **Responsibility:** Render form/result; pathway-specific comorbidity blocks; clinic context + optional vitals; build treatment plan and reason lines; teleconsultation CTAs; manage form↔card state.
 - **Tech choice:** Streamlit; `DANGER_SIGN_TILES` dataclass list for tile metadata.
 - **Why this choice:** Fastest path to a mobile-friendly, deployable demo with no frontend build chain.
 - **Interface:** `render_form()`, `render_result()`, `reset_to_form()`.
@@ -209,9 +229,9 @@ class FebrileAssessment(BaseModel):
 ```
 
 **Notes:**
-- No indexing / no tables — `st.session_state` holds the current `FebrileAssessment` only.
-- Retention: session-scoped; cleared on "New patient" or browser close. No PII leaves the device.
-- Pediatric pathway: `comorbidities` is always `[]` after `filter_comorbidities_for_band()`.
+- No indexing / no tables — `st.session_state` holds the current `FebrileAssessment`; fever registry is append-only JSONL in `data/encounters.jsonl`.
+- Retention: session-scoped UI state; registry rows persist on disk until cleared manually.
+- Pediatric pathway: `comorbidities` after `filter_comorbidities_for_band()` may include `SICKLE_CELL` and/or `SEVERE_MALNUTRITION` only.
 - Adult pathway: up to nine comorbidities flow into `_composite_score()`.
 - `referral_reasons` are stable string codes (e.g. `imci:convulsions`, `neonate_fever`); human wording via `DANGER_SIGN_LABELS`.
 
@@ -221,7 +241,7 @@ FeverGate has no network API. The internal call graph:
 
 ### `evaluate_febrile_patient(ctx: PatientContext) -> FebrileAssessment`
 
-- **Input:** A validated `PatientContext` (comorbidities empty on pediatric pathway).
+- **Input:** A validated `PatientContext` (pediatric pathway: at most sickle cell + severe malnutrition after filtering).
 - **Output:** `FebrileAssessment` with `decision`, `urgency`, `monitoring_days`, sorted/deduped `referral_reasons`, and `rationale`.
 - **Errors:** Invalid inputs rejected at construction by pydantic.
 - **Latency budget:** Pure CPU, no I/O; p99 < 10ms.
@@ -251,7 +271,7 @@ FeverGate has no network API. The internal call graph:
 
 ### Decision: Pathway split at 15 years in UI vs. per-band bespoke forms
 
-- **Chose:** Two pathways (`<15` pediatric, `15+` adult) over six age bands; comorbidity UI gated to adult only.
+- **Chose:** Two pathways (`<15` pediatric with reduced comorbidities, `15+` adult with full grid) over six age bands.
 - **Considered:** Separate screens per age band; comorbidities on all bands; a manual "child/adult" toggle.
 - **Why we picked this:** Matches clinical practice (IMCI for children, chronic-disease modifiers for adolescents/adults) without six different forms. A manual toggle duplicates what age band already communicates.
 
@@ -290,40 +310,59 @@ FeverGate has no network API. The internal call graph:
 
 ## 10. Testing strategy
 
-Runner: **pytest** via `uv run pytest tests/ -v`. Tests live in `tests/` with `pythonpath = ["src"]` in `pyproject.toml`. No browser automation, no visual regression.
+Runner: **pytest** via `uv run pytest tests/ -v`. Tests live in `tests/` with `pythonpath = ["src"]` in `pyproject.toml`. No browser automation, no visual regression. Gemini is **never** called live — patch `explainer.narrate.get_client` with the `gemini_stub` fixture in `conftest.py`.
 
-**Unit tests (must have):**
-- `is_pediatric_pathway()` / `is_adult_pathway()` in `pathways.py` — each of the three pediatric bands returns pediatric-only; each of the three adult bands returns adult-only; bands are mutually exclusive. **File:** `tests/test_pathways.py`
-- `comorbidity_options_for_band()` — pediatric band returns sickle cell + severe malnutrition only; adult band returns all nine options. **File:** `tests/test_pathways.py`
-- `filter_comorbidities_for_band()` — pediatric band drops `CHRONIC_HEART_DISEASE`; adult band preserves allowed values; pediatric band preserves `SICKLE_CELL`. **File:** `tests/test_pathways.py`
-- `danger_sign_tiles_for_band()` — all six age bands return the same nine IMCI tiles. **File:** `tests/test_pathways.py`
-- `_hard_referral_triggers(ctx)` in `sepsis_screen.py` — every IMCI danger sign produces its `imci:*` trigger at pediatric (24 mo, 96 mo) and adult (480 mo) ages. **File:** `tests/test_sepsis_internals.py`
-- `_imci_danger_signs(ctx)` — each `DangerSigns` boolean and `ConsciousnessLevel.LETHARGIC` / `UNCONSCIOUS` maps to the expected trigger code. **File:** `tests/test_sepsis_internals.py`
-- `_age_band(age_months)` — boundaries: 1→neonate, 2→under5, 59/60, 144, 216, 780→elderly. **File:** `tests/test_sepsis_internals.py`
-- `_compute_qsofa(ctx)` — returns `None` under 12 years (pediatric engine band); for adults, ≥2 when lethargic + low SBP + high RR combine. **File:** `tests/test_sepsis_internals.py`
-- `_compute_news2(ctx)` — returns `None` when RR missing or under 12 years; high derangement pushes score ≥7 for adults. **File:** `tests/test_sepsis_internals.py`
-- `_composite_score(ctx)` — neonate age points, hypothermia, lethargy, comorbidities (HIV + pregnancy on adult pathway), prolonged fever, toxic appearance surface in `score_components`. **File:** `tests/test_sepsis_internals.py`
-- `evaluate_febrile_patient(ctx)` — `monitoring_days == 3` only for `TREAT_AND_MONITOR`; `referral_reasons` sorted and deduplicated. **File:** `tests/test_engine.py`
-- `build_refer_reason(reasons, urgency)` — `["imci:convulsions"]` + IMMEDIATE → `"Convulsions — refer immediately."`; dedupe; unknown-only fallback. **File:** `tests/test_refer_reason.py`
-- `DANGER_SIGN_LABELS` — every `imci:*` code emitted by `_imci_danger_signs` has a label entry. **File:** `tests/test_sepsis_internals.py`
-- Parametrized danger-sign safety net — 9 signs × 2 age bands (pediatric 96 mo + adult 480 mo) → always REFER/REFER_IMMEDIATE. **File:** `tests/test_danger_signs.py`
+### Unit tests (must have)
 
-**Integration tests (one per major flow):**
-- **Pediatric danger-sign refer flow** — convulsions at age 24 mo via `build_patient_context(age_band="2 months – 5 years", ...)` → `REFER_IMMEDIATE` with `imci:convulsions`. **File:** `tests/test_integration_flows.py`
-- **Neonate fever refer flow** — age 1 with fever → `REFER_IMMEDIATE` with `neonate_fever`. **File:** `tests/test_integration_flows.py`
-- **Pediatric uncomplicated fever monitor flow** — under-5, mild vitals, no danger signs, no comorbidities → `TREAT_AND_MONITOR`, `monitoring_days == 3`. **File:** `tests/test_integration_flows.py`
-- **Adult comorbidity + deterioration flow** — `build_patient_context(age_band="18–64 years", comorbidities=[CHRONIC_LUNG_DISEASE])` with qSOFA-positive vitals → `REFER` or `REFER_IMMEDIATE`. **File:** `tests/test_integration_flows.py`
-- **Pediatric pathway strips stale comorbidities** — `build_patient_context(age_band="5–15 years", comorbidities=[CHRONIC_HEART_DISEASE])` → `ctx.comorbidities == []`. **File:** `tests/test_integration_flows.py` (or `tests/test_pathways.py`)
+| Module / behavior | What to assert | File |
+|---|---|---|
+| `is_pediatric_pathway()` / `is_adult_pathway()` | Three pediatric bands pediatric-only; three adult bands adult-only; mutually exclusive | `test_pathways.py` |
+| `comorbidity_options_for_band()` | Pediatric → sickle cell + severe malnutrition only; adult → all nine | `test_pathways.py` |
+| `filter_comorbidities_for_band()` | Pediatric drops adult-only (e.g. `CHRONIC_HEART_DISEASE`); keeps `SICKLE_CELL` | `test_pathways.py` |
+| `danger_sign_tiles_for_band()` | All six age bands → same nine IMCI tiles | `test_pathways.py` |
+| `_hard_referral_triggers`, `_imci_danger_signs`, `_age_band` | IMCI triggers at pediatric + adult ages; consciousness mapping; age boundaries | `test_sepsis_internals.py` |
+| `_compute_qsofa`, `_compute_news2`, `_composite_score` | Age gates, score thresholds, component presence | `test_sepsis_internals.py` |
+| `DANGER_SIGN_LABELS` | Every `imci:*` from `_imci_danger_signs` has a label | `test_sepsis_internals.py` |
+| `evaluate_febrile_patient()` | `monitoring_days == 3` only for `TREAT_AND_MONITOR`; reasons sorted/deduped | `test_engine.py` |
+| `assess_sepsis_risk()` | Neonate fever, convulsions, qSOFA, NEWS2, borderline comorbidity, uncomplicated fever | `test_sepsis_screen.py` |
+| `build_refer_reason()` | Convulsions immediate line; dedupe; NEWS2 prefix; unknown fallback | `test_refer_reason.py` |
+| Danger-sign safety net | 9 signs × 2 ages (96 mo + 480 mo) → always REFER / REFER_IMMEDIATE | `test_danger_signs.py` |
+| `build_treatment_plan()` | REFER → no outpatient + teleconsultation CTA; endemic fever + ACT in stock → presumptive ACT; ACT out of stock → stock message; low-risk no-fever → no antimalarial | `test_treatment_plan.py` |
+| `log_encounter()` | Appends JSONL rows; `count_encounters` increments | `test_encounter_log.py` |
+| `teleconsultation_dial_url()` / `schedule_teleconsultation_note()` | `tel:` URL and schedule note include desk number + days | `test_teleconsultation.py` |
+| `narrate_assessment()` | Patched `get_client` returns deterministic stub text; prompt includes decision value | `test_explainer.py` |
 
-**Deliberately not tested (and why):**
-- Streamlit rendering, CSS, comorbidity progressive-disclosure visibility, and the snap transition — visual/runtime UI; verified by human walkthrough.
-- `options_by_system()` grouping order and emoji icons — presentational; enum mapping is what matters clinically.
-- Exact composite-score arithmetic beyond documented thresholds — we test decision boundaries and component presence, not every internal point value.
-- pydantic's own validation internals — trust the library.
-- Clinical accuracy of WHO thresholds — clinician review, not a unit test.
-- Gemini / LLM API calls — no LLM in v1 decision path; nothing to mock.
+### Integration tests (one happy path per major flow)
 
-**Stack default:** Python → `pytest`. Run: `uv run pytest tests/ -v`. Current suite: **100 tests, all passing**.
+| Flow | Setup | Expected | File |
+|---|---|---|---|
+| Pediatric danger-sign refer | `build_patient_context("2 months – 5 years", convulsions tile)` | `REFER_IMMEDIATE`, `imci:convulsions` | `test_integration_flows.py` |
+| Neonate fever refer | `PatientContext(age_months=1, has_fever=True)` | `REFER_IMMEDIATE`, `neonate_fever` | `test_integration_flows.py` |
+| Uncomplicated fever monitor | Under-5, mild vitals, no danger signs | `TREAT_AND_MONITOR`, `monitoring_days == 3` | `test_integration_flows.py` |
+| Adult deterioration (direct) | Adult lethargic + qSOFA-positive vitals | `REFER` or `REFER_IMMEDIATE` | `test_integration_flows.py` |
+| Adult comorbidity via builder | `build_patient_context("18–64 years", CHRONIC_LUNG_DISEASE)` + qSOFA vitals + lethargy | `REFER` or `REFER_IMMEDIATE` | `test_integration_flows.py` |
+| Pediatric strips stale adult comorbidities | `build_patient_context("5–15 years", [CHRONIC_HEART_DISEASE])` | `ctx.comorbidities == []` | `test_integration_flows.py` |
+| Pediatric keeps allowed comorbidities | `build_patient_context("5–15 years", [SICKLE_CELL, CHRONIC_HEART_DISEASE])` | `[SICKLE_CELL]` only | `test_integration_flows.py` |
+| Vitals via builder | `build_patient_context(..., systolic_bp=95, spo2=88, rr=24)` | Vitals on `PatientContext` | `test_integration_flows.py` |
+| Adult comorbidities via builder | Two adult comorbidities on 18–64 band | Both present on context | `test_integration_flows.py` |
+
+### Deliberately not tested (and why)
+
+- Streamlit rendering, CSS, expander visibility, card snap transition — runtime UI; human walkthrough only.
+- `options_by_system()` grouping order and emoji icons — presentational.
+- Exact composite-score point arithmetic beyond documented thresholds.
+- pydantic validation internals — trust the library.
+- Clinical accuracy of WHO / national ACT dosing — clinician review, not unit tests.
+- Live Gemini API — mocked via `gemini_stub`; decision path has no LLM.
+- `ClinicContext` session toggles in Streamlit — UI state; logic covered via `ClinicContext` passed to `build_treatment_plan`.
+
+### Running the suite
+
+```bash
+uv run pytest tests/ -v
+```
+
+**Current suite:** 114 tests (100 unit, 14 integration), all passing.
 
 ## 11. Rollout & monitoring
 

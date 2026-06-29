@@ -6,6 +6,12 @@ from decision_engine.models import Comorbidity
 from ui.comorbidity_options import comorbidity_options_for_band, filter_comorbidities_for_band
 from ui.danger_sign_labels import DANGER_SIGN_TILES, danger_sign_tiles_for_band
 from ui.pathways import ADULT_AGE_BANDS, PEDIATRIC_AGE_BANDS, is_adult_pathway, is_pediatric_pathway
+from ui.pathways import (
+    PATHWAY_ADULT,
+    PATHWAY_CHILD,
+    age_bands_for_pathway,
+    default_age_band_index,
+)
 
 
 @pytest.mark.parametrize("age_band", sorted(PEDIATRIC_AGE_BANDS))
@@ -52,3 +58,18 @@ def test_filter_comorbidities_drops_adult_only_for_pediatric():
         [Comorbidity.SEVERE_MALNUTRITION, Comorbidity.HIV],
     )
     assert filtered == [Comorbidity.SEVERE_MALNUTRITION]
+
+
+def test_age_bands_for_pathway_groups():
+    assert age_bands_for_pathway(PATHWAY_CHILD) == (
+        "Under 2 months",
+        "2 months \u2013 5 years",
+        "5\u201315 years",
+    )
+    assert age_bands_for_pathway(PATHWAY_ADULT) == (
+        "15\u201317 years",
+        "18\u201364 years",
+        "65+ years",
+    )
+    assert default_age_band_index(PATHWAY_CHILD) == 1
+    assert default_age_band_index(PATHWAY_ADULT) == 1
