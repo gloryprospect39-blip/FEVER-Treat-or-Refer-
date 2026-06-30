@@ -68,3 +68,18 @@ def count_encounters(log_path: Path | None = None) -> int:
         return 0
     with path.open(encoding="utf-8") as handle:
         return sum(1 for line in handle if line.strip())
+
+
+def load_encounters(log_path: Path | None = None) -> list[dict[str, Any]]:
+    """Load all encounter rows from the JSONL log (skips blank lines)."""
+    path = log_path or DEFAULT_LOG_PATH
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            line = line.strip()
+            if not line:
+                continue
+            rows.append(json.loads(line))
+    return rows

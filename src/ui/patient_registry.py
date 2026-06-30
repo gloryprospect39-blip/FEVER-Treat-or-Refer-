@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "data" / "fevergate.db"
@@ -207,6 +207,26 @@ def list_recent_patients(
                 (limit,),
             ).fetchall()
     return [_row_to_patient(row) for row in rows]
+
+
+def count_patients_registered_between(
+    start: date,
+    end: date,
+    db_path: Path | None = None,
+) -> int:
+    """Patients whose registry created_at falls in [start, end] (inclusive)."""
+    init_db(db_path)
+    path = db_path or DEFAULT_DB_PATH
+    with _connect(path) as conn:
+        rows = conn.execute("SELECT created_at FROM patients").fetchall()
+    count = 0
+    for row in rows:
+        created = datetime.fromisoformat(
+            row["created_at"].replace("Z", "+00:00")
+        ).date()
+        if start <= created <= end:
+            count += 1
+    return count
 
 
 def resolve_patient_for_encounter(
