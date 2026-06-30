@@ -9,3 +9,10 @@ dist/
 build/
 data/
 encounters.jsonl
+
+# Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+web-temp/

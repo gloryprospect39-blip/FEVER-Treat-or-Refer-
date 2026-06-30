@@ -1,6 +1,27 @@
-# Border clinic febrile triage
+# FeverGate — Border clinic febrile triage
 
 Non-laboratory **treat / refer** decision support for febrile patients of **all ages**, with a sepsis screening layer based on age, vitals, danger signs, and comorbidities.
+
+## Stack
+
+- **Next.js 16** + **React 19** + **Tailwind CSS 4**
+- **Lucide** icons
+- Deterministic TypeScript decision engine (ported from Python)
+- Local persistence: SQLite patient registry + JSONL encounter log (`data/`)
+
+## Quick start
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+```bash
+npm run build   # production build
+npm start       # production server
+```
 
 ## Clinical basis (screening only)
 
@@ -11,49 +32,27 @@ Non-laboratory **treat / refer** decision support for febrile patients of **all 
 
 This tool **does not diagnose sepsis**; it flags likely severe illness for referral.
 
-## Setup
+## Project layout
 
-```bash
-uv sync
-uv run streamlit run app.py
-uv run pytest tests/ -v
+```
+src/
+  app/              Next.js pages + API routes
+  components/       Triage UI (form + result cards)
+  lib/
+    decision-engine/  Triage rules (TypeScript)
+    fevergate/        Form adapters, treatment plans
+    db/               SQLite registry + JSONL encounters
+legacy/python/      Original Streamlit app + pytest suite
+data/               Runtime DB + logs (gitignored)
 ```
 
-Dependencies are managed with [uv](https://docs.astral.sh/uv/) via `pyproject.toml`.
+## API routes
 
-The Streamlit app (`app.py`) is the point-of-care triage UI: a mobile-first
-single page with the 8 IMCI danger-sign tiles, an age band selector, and a fever
-toggle. On submit it calls the decision engine and shows a full-width **REFER
-snap screen** (red card with a named reason for referral, amber for treat &
-monitor, green for treat).
-
-## Usage
-
-```python
-from decision_engine import evaluate_febrile_patient
-from decision_engine.models import PatientContext, VitalSigns, DangerSigns
-
-result = evaluate_febrile_patient(
-    PatientContext(
-        age_months=480,
-        vitals=VitalSigns(temperature_c=39.2, respiratory_rate=24, systolic_bp=98),
-    )
-)
-print(result.decision, result.sepsis.score, result.referral_reasons)
-```
-
-## Age bands
-
-| Band | Age | Primary screen |
-|------|-----|----------------|
-| Neonate | <2 months | Hard refer if fever |
-| Under 5 | 2–59 months | IMCI danger signs |
-| Child | 5–12 years | Age-adjusted vitals + composite score |
-| Adolescent | 12–18 years | qSOFA / NEWS2 + composite |
-| Adult | 18–64 years | qSOFA / NEWS2 + composite |
-| Elderly | ≥65 years | As adult + age risk points |
-
-The Streamlit form uses six age bands (including split adolescent / adult / elderly) and shows **underlying disease** toggles by organ system (heart, lungs, kidneys, etc.) for patients aged 15 and older.
+| Route | Method | Purpose |
+|-------|--------|---------|
+| `/api/patients` | GET | List villages + recent patients |
+| `/api/patients/resolve` | POST | Register or record revisit |
+| `/api/encounters` | POST | Append encounter log row |
 
 ## Output decisions
 
@@ -61,3 +60,14 @@ The Streamlit form uses six age bands (including split adolescent / adult / elde
 - `REFER` — elevated sepsis screen (qSOFA, NEWS2, composite, comorbidity)
 - `TREAT_AND_MONITOR` — low-risk; schedule 3-day check-ins
 - `TREAT` — no fever and low risk
+
+## Legacy Python app
+
+The original Streamlit implementation lives in `legacy/python/`:
+
+```bash
+cd legacy/python
+uv sync
+uv run streamlit run app.py
+uv run pytest tests/ -v
+```
