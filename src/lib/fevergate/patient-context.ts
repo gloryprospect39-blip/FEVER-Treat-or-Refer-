@@ -1,0 +1,57 @@
+import type {
+  Comorbidity,
+  ConsciousnessLevel,
+  DangerSigns,
+  PatientContext,
+} from "@/lib/decision-engine/models";
+import { DANGER_SIGN_TILES } from "./danger-signs";
+import { filterComorbiditiesForBand } from "./comorbidities";
+import { AGE_BANDS } from "./pathways";
+
+export function buildPatientContext(input: {
+  ageBand: string;
+  hasFever: boolean;
+  feverDurationDays: number;
+  selectedTiles: Record<string, boolean>;
+  comorbidities?: Comorbidity[];
+  systolicBp?: number | null;
+  spo2Percent?: number | null;
+  respiratoryRate?: number | null;
+}): PatientContext {
+  const dangerSigns: DangerSigns = {};
+  let consciousness: ConsciousnessLevel = "alert";
+
+  for (const tile of DANGER_SIGN_TILES) {
+    if (!input.selectedTiles[tile.triggerCode]) continue;
+    if (tile.dangerField) {
+      dangerSigns[tile.dangerField] = true;
+    }
+    if (tile.consciousness === "unconscious") {
+      consciousness = "unconscious";
+    } else if (
+      tile.consciousness === "lethargic" &&
+      consciousness !== "unconscious"
+    ) {
+      consciousness = "lethargic";
+    }
+  }
+
+  return {
+    age_months: AGE_BANDS[input.ageBand] ?? 24,
+    has_fever: input.hasFever,
+    fever_duration_days: input.feverDurationDays,
+    consciousness,
+    toxic_appearance: false,
+    comorbidities: filterComorbiditiesForBand(
+      input.ageBand,
+      input.comorbidities ?? [],
+    ),
+    danger_signs: dangerSigns,
+    vitals: {
+      systolic_bp: input.systolicBp ?? null,
+      spo2_percent: input.spo2Percent ?? null,
+      respiratory_rate: input.respiratoryRate ?? null,
+      weak_or_absent_radial_pulse: false,
+    },
+  };
+}
