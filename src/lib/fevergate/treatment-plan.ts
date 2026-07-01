@@ -3,22 +3,22 @@ import type {
   PatientContext,
   ReferralUrgency,
 } from "@/lib/decision-engine/models";
-import { DANGER_SIGN_LABELS } from "@/lib/decision-engine/models";
+import { dangerSignLabelsMm, mm } from "@/lib/i18n/mm";
 
 const EXTRA: Record<string, string> = {
-  neonate_fever: DANGER_SIGN_LABELS.neonate_fever,
-  hypoxia: "Low oxygen saturation",
-  hypotension_adult: "Low blood pressure",
-  hypotension_pediatric: "Low blood pressure",
-  weak_or_absent_radial_pulse: "Weak or absent pulse",
-  "qsofa>=2": "Elevated qSOFA",
-  "composite_sepsis_score>=3": "Elevated sepsis screen",
+  neonate_fever: dangerSignLabelsMm.neonate_fever,
+  hypoxia: mm.referReason.hypoxia,
+  hypotension_adult: mm.referReason.hypotension,
+  hypotension_pediatric: mm.referReason.hypotension,
+  weak_or_absent_radial_pulse: mm.referReason.weakPulse,
+  "qsofa>=2": mm.referReason.elevatedQsofa,
+  "composite_sepsis_score>=3": mm.referReason.elevatedSepsisScreen,
 };
 
 export function urgencyPhrase(urgency: ReferralUrgency): string {
-  if (urgency === "immediate") return "refer immediately";
-  if (urgency === "same_day") return "refer (same day)";
-  return "refer";
+  if (urgency === "immediate") return mm.referReason.referImmediately;
+  if (urgency === "same_day") return mm.referReason.referSameDay;
+  return mm.referReason.refer;
 }
 
 export function buildReferReason(
@@ -28,14 +28,14 @@ export function buildReferReason(
   const named: string[] = [];
   for (const code of referralReasons) {
     if (code === "convulsions") continue;
-    let label = DANGER_SIGN_LABELS[code] ?? EXTRA[code];
-    if (!label && code.startsWith("news2>=")) label = "Elevated NEWS2";
+    let label = dangerSignLabelsMm[code] ?? EXTRA[code];
+    if (!label && code.startsWith("news2>=")) label = mm.referReason.elevatedNews2;
     if (label && !named.includes(label)) named.push(label);
   }
   const subject = named.length
-    ? named.join(", ")
-    : "Elevated severe-illness screen";
-  return `${subject} — ${urgencyPhrase(urgency)}.`;
+    ? named.join("၊ ")
+    : mm.referReason.elevatedSevereIllness;
+  return `${subject} — ${urgencyPhrase(urgency)}။`;
 }
 
 export type MalariaEndemicity = "high" | "low";
@@ -54,13 +54,9 @@ export interface TreatmentPlan {
 }
 
 function actDoseBand(ageMonths: number): string {
-  if (ageMonths < 60) {
-    return "weight-based ACT (artemether-lumefantrine) per national under-5 protocol";
-  }
-  if (ageMonths < 144) {
-    return "weight-based ACT (artemether-lumefantrine) per national child protocol";
-  }
-  return "adult ACT course (artemether-lumefantrine) per national protocol";
+  if (ageMonths < 60) return mm.treatment.actDoseUnder5;
+  if (ageMonths < 144) return mm.treatment.actDoseChild;
+  return mm.treatment.actDoseAdult;
 }
 
 function presumptiveMalariaPlan(
@@ -70,18 +66,15 @@ function presumptiveMalariaPlan(
   if (!ctx.has_fever) return null;
   if (clinic.malaria_endemicity !== "high") return null;
   if (!clinic.act_in_stock) {
-    return [
-      "Presumptive malaria treatment indicated but ACT not in stock.",
-      "Refer for ACT or obtain stock before treating presumptive malaria.",
-    ];
+    return [mm.treatment.actOutOfStock, mm.treatment.actOutOfStockDetail];
   }
   const dose = actDoseBand(ctx.age_months);
   const feverSupport = clinic.paracetamol_in_stock
-    ? " Give paracetamol for fever."
+    ? mm.treatment.paracetamolForFever
     : "";
   return [
-    `Give presumptive ACT: ${dose}.`,
-    `Uncomplicated fever in malaria-endemic area — start ${dose} now.${feverSupport} No rapid test required per presumptive-treatment guidelines.`,
+    mm.treatment.giveAct(dose),
+    mm.treatment.actDetail(dose, feverSupport),
   ];
 }
 
@@ -94,10 +87,9 @@ export function buildTreatmentPlan(
 
   if (decision === "REFER_IMMEDIATE" || decision === "REFER") {
     return {
-      summary: "Do not start outpatient treatment.",
-      detail:
-        "Arrange urgent transport to referral facility. Stabilize per local protocol while awaiting teleconsultation.",
-      primaryActionLabel: "Call teleconsultation now",
+      summary: mm.treatment.noOutpatient,
+      detail: mm.treatment.noOutpatientDetail,
+      primaryActionLabel: mm.actions.callTeleconsultation,
     };
   }
 
@@ -109,49 +101,46 @@ export function buildTreatmentPlan(
       const [summary, detail] = malaria;
       return {
         summary,
-        detail: `${detail} Re-check this patient in ${days} days.`,
-        primaryActionLabel: "Schedule teleconsultation",
+        detail: `${detail}${mm.treatment.recheckInDays(days)}`,
+        primaryActionLabel: mm.actions.scheduleTeleconsultation,
       };
     }
     if (ctx.has_fever && clinic.paracetamol_in_stock) {
       return {
-        summary: "Give paracetamol for fever.",
-        detail: `Supportive care for uncomplicated fever. Re-check in ${days} days; return sooner if danger signs appear.`,
-        primaryActionLabel: "Schedule teleconsultation",
+        summary: mm.treatment.giveParacetamol,
+        detail: mm.treatment.supportiveFever(days),
+        primaryActionLabel: mm.actions.scheduleTeleconsultation,
       };
     }
     return {
-      summary: "Supportive care and close observation.",
-      detail: `Monitor at home. Re-check in ${days} days; return sooner if condition worsens.`,
-      primaryActionLabel: "Schedule teleconsultation",
+      summary: mm.treatment.supportiveCare,
+      detail: mm.treatment.monitorHome(days),
+      primaryActionLabel: mm.actions.scheduleTeleconsultation,
     };
   }
 
   if (malaria) {
     const [summary, detail] = malaria;
-    return { summary, detail, primaryActionLabel: "Start treatment" };
+    return { summary, detail, primaryActionLabel: mm.actions.startTreatment };
   }
   if (!ctx.has_fever) {
     return {
-      summary: "No antimalarial indicated.",
-      detail:
-        "Low-risk screen without fever — routine care; counsel on return if fever develops.",
-      primaryActionLabel: "Start treatment",
+      summary: mm.treatment.noAntimalarial,
+      detail: mm.treatment.noAntimalarialDetail,
+      primaryActionLabel: mm.actions.startTreatment,
     };
   }
   if (clinic.paracetamol_in_stock) {
     return {
-      summary: "Give paracetamol for fever.",
-      detail:
-        "Supportive care for low-risk febrile illness without presumptive malaria indication.",
-      primaryActionLabel: "Start treatment",
+      summary: mm.treatment.giveParacetamol,
+      detail: mm.treatment.supportiveLowRisk,
+      primaryActionLabel: mm.actions.startTreatment,
     };
   }
   return {
-    summary: "Supportive care.",
-    detail:
-      "Low-risk screen — rest, fluids, and counsel on return if danger signs appear.",
-    primaryActionLabel: "Start treatment",
+    summary: mm.treatment.supportiveGeneral,
+    detail: mm.treatment.supportiveGeneralDetail,
+    primaryActionLabel: mm.actions.startTreatment,
   };
 }
 
@@ -162,7 +151,10 @@ export function teleconsultationDialUrl(): string {
 }
 
 export function scheduleTeleconsultationNote(monitoringDays: number): string {
-  return `Teleconsultation scheduled for day ${monitoringDays} follow-up. Call ${TELECONSULTATION_NUMBER} if condition worsens sooner.`;
+  return mm.treatment.teleconsultScheduled(
+    monitoringDays,
+    TELECONSULTATION_NUMBER,
+  );
 }
 
 export function requireCatchment(value: string): string {

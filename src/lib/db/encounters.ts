@@ -5,6 +5,7 @@ import path from "path";
 
 import type { FebrileAssessment, PatientContext } from "@/lib/decision-engine/models";
 import type { ClinicContext } from "@/lib/fevergate/treatment-plan";
+import type { CatchmentZoneSelection } from "@/lib/fevergate/catchment-levels";
 import { requireCatchment } from "@/lib/fevergate/treatment-plan";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -13,6 +14,7 @@ const LOG_PATH = path.join(DATA_DIR, "encounters.jsonl");
 export interface EncounterRow {
   timestamp: string;
   catchment: string;
+  catchment_zones?: CatchmentZoneSelection;
   registration: {
     id: string;
     name: string | null;
@@ -30,6 +32,7 @@ export function logEncounter(input: {
   clinic: ClinicContext;
   catchment: string;
   actionTaken?: string | null;
+  catchmentZones?: CatchmentZoneSelection;
   registeredPatientId?: string | null;
   registeredName?: string | null;
   registeredVillage?: string | null;
@@ -48,6 +51,10 @@ export function logEncounter(input: {
   const row: EncounterRow = {
     timestamp: new Date().toISOString(),
     catchment: catchmentValue,
+    catchment_zones:
+      input.catchmentZones && Object.keys(input.catchmentZones).length
+        ? input.catchmentZones
+        : undefined,
     registration,
     patient: input.ctx,
     clinic: input.clinic,

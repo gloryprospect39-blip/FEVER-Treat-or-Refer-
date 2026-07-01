@@ -25,6 +25,12 @@ DANGER_FIELD_TO_CODE: dict[str, str] = {
 
 REFERRAL_DECISIONS = {TriageDecision.REFER.value, TriageDecision.REFER_IMMEDIATE.value}
 
+CATCHMENT_ZONE_LEVELS: tuple[str, ...] = ("A", "B", "C")
+
+
+def _zone_counter_map() -> dict[str, Counter[str]]:
+    return {level: Counter() for level in CATCHMENT_ZONE_LEVELS}
+
 
 @dataclass
 class WeekMetrics:
@@ -33,6 +39,14 @@ class WeekMetrics:
     decisions: Counter[str] = field(default_factory=Counter)
     referrals_by_catchment: Counter[str] = field(default_factory=Counter)
     monitor_by_catchment: Counter[str] = field(default_factory=Counter)
+    zones_by_level: dict[str, Counter[str]] = field(default_factory=_zone_counter_map)
+    referrals_by_zone_level: dict[str, Counter[str]] = field(
+        default_factory=_zone_counter_map
+    )
+    monitor_by_zone_level: dict[str, Counter[str]] = field(
+        default_factory=_zone_counter_map
+    )
+    zone_encounters_with_zones: int = 0
     age_groups: Counter[str] = field(default_factory=Counter)
     referrals_by_age: Counter[str] = field(default_factory=Counter)
     danger_signs: Counter[str] = field(default_factory=Counter)
@@ -137,6 +151,19 @@ def compute_week_metrics(rows: list[dict[str, Any]]) -> WeekMetrics:
         if decision == TriageDecision.TREAT_AND_MONITOR.value:
             metrics.monitor_by_catchment[catchment] += 1
 
+        zones = row.get("catchment_zones") or {}
+        if zones:
+            metrics.zone_encounters_with_zones += 1
+        for level in CATCHMENT_ZONE_LEVELS:
+            zone_value = zones.get(level)
+            if not zone_value:
+                continue
+            metrics.zones_by_level[level][zone_value] += 1
+            if _is_referral(decision):
+                metrics.referrals_by_zone_level[level][zone_value] += 1
+            if decision == TriageDecision.TREAT_AND_MONITOR.value:
+                metrics.monitor_by_zone_level[level][zone_value] += 1
+
         positive_signs = _danger_signs_positive(patient)
         if positive_signs:
             metrics.danger_sign_encounters += 1
@@ -217,6 +244,55 @@ def _reason_label(code: str) -> str:
     return code
 
 
+def _append_zone_level_table(
+    lines: list[str],
+    *,
+    level: str,
+    metrics: WeekMetrics,
+) -> None:
+    counter = metrics.zones_by_level[level]
+    lines.append(f"### Level {level}")
+    lines.append("")
+    if not counter:
+        lines.append(f"_No level-{level} selections recorded this week._")
+        lines.append("")
+        return
+
+    level_total = sum(counter.values())
+    lines.append(
+        "| Selection | Encounters | % of level | Referrals | Referral rate | TREAT & MONITOR |"
+    )
+    lines.append(
+        "|-----------|------------|------------|-----------|---------------|-----------------|"
+    )
+    for selection, count in counter.most_common():
+        refs = metrics.referrals_by_zone_level[level][selection]
+        mon = metrics.monitor_by_zone_level[level][selection]
+        lines.append(
+            f"| {selection} | {count} | {_pct(count, level_total)} | {refs} | "
+            f"{_pct(refs, count)} | {mon} |"
+        )
+    lines.append(
+        f"| **Level {level} total** | **{level_total}** | **100%** | "
+        f"**{sum(metrics.referrals_by_zone_level[level].values())}** | "
+        f"**{_pct(sum(metrics.referrals_by_zone_level[level].values()), level_total)}** | "
+        f"**{sum(metrics.monitor_by_zone_level[level].values())}** |"
+    )
+    lines.append("")
+
+
+def _append_catchment_zone_sections(lines: list[str], metrics: WeekMetrics) -> None:
+    lines.extend(["## 3. Encounters by catchment zone (A / B / C)", ""])
+    lines.append(
+        f"Encounters with at least one zone recorded: "
+        f"**{metrics.zone_encounters_with_zones}** / **{metrics.total}** "
+        f"({_pct(metrics.zone_encounters_with_zones, metrics.total)})."
+    )
+    lines.append("")
+    for level in CATCHMENT_ZONE_LEVELS:
+        _append_zone_level_table(lines, level=level, metrics=metrics)
+
+
 def format_weekly_report_markdown(
     *,
     week_start: date,
@@ -288,6 +364,9 @@ def format_weekly_report_markdown(
         f"{prior.linked_registry if prior else '—'} | "
         f"{(current.linked_registry - prior.linked_registry) if prior else '—'} |",
         f"| New registry patients | **{new_patients}** | — | — |",
+        f"| Encounters with zone A/B/C | **{current.zone_encounters_with_zones}** | "
+        f"{prior.zone_encounters_with_zones if prior else '—'} | "
+        f"{(current.zone_encounters_with_zones - prior.zone_encounters_with_zones) if prior else '—'} |",
         "",
     ]
 
@@ -319,7 +398,9 @@ def format_weekly_report_markdown(
     )
     lines.append("")
 
-    lines.extend(["## 3. Age pattern", ""])
+    _append_catchment_zone_sections(lines, current)
+
+    lines.extend(["## 4. Age pattern", ""])
     lines.append("| Age group | Encounters | Referrals | Referral rate |")
     lines.append("|-----------|------------|-----------|---------------|")
     for group, count in current.age_groups.most_common():
@@ -329,7 +410,7 @@ def format_weekly_report_markdown(
         )
     lines.append("")
 
-    lines.extend(["## 4. Danger signs (positive at triage)", ""])
+    lines.extend(["## 5. Danger signs (positive at triage)", ""])
     lines.append("| Danger sign | Count | % of encounters |")
     lines.append("|-------------|-------|-----------------|")
     for code, count in current.danger_signs.most_common():
@@ -341,7 +422,7 @@ def format_weekly_report_markdown(
     )
     lines.append("")
 
-    lines.extend(["## 5. Decision mix", ""])
+    lines.extend(["## 6. Decision mix", ""])
     for decision in (
         TriageDecision.REFER_IMMEDIATE.value,
         TriageDecision.REFER.value,
@@ -354,7 +435,7 @@ def format_weekly_report_markdown(
         )
     lines.append("")
 
-    lines.extend(["## 6. Malaria context (session settings)", ""])
+    lines.extend(["## 7. Malaria context (session settings)", ""])
     lines.append("| Setting | Encounters | Presumptive ACT proxy* |")
     lines.append("|---------|------------|------------------------|")
     lines.append(
@@ -373,7 +454,7 @@ def format_weekly_report_markdown(
     )
     lines.append("")
 
-    lines.extend(["## 7. Registration linkage", ""])
+    lines.extend(["## 8. Registration linkage", ""])
     lines.append("| Metric | Count |")
     lines.append("|--------|-------|")
     lines.append(f"| Catchment-only (no registry id) | {total - current.linked_registry} |")
@@ -382,7 +463,7 @@ def format_weekly_report_markdown(
     lines.append(f"| New patients registered (DB) | {new_patients} |")
     lines.append("")
 
-    lines.extend(["## 8. Top referral reason codes", ""])
+    lines.extend(["## 9. Top referral reason codes", ""])
     lines.append("| Code | Label | Count |")
     lines.append("|------|-------|-------|")
     for code, count in current.referral_reasons.most_common(10):
@@ -391,9 +472,11 @@ def format_weekly_report_markdown(
 
     lines.extend(
         [
-            "## 9. Data quality & limitations",
+            "## 10. Data quality & limitations",
             "",
             f"- **Catchment recorded:** {total}/{total} (100%)",
+            f"- **Zone A/B/C recorded:** {current.zone_encounters_with_zones}/{total} "
+            f"({_pct(current.zone_encounters_with_zones, total)})",
             f"- **Registry-linked:** {current.linked_registry}/{total} "
             f"({_pct(current.linked_registry, total)})",
             "- **No lab confirmation** — clinic screening counts, not incidence",

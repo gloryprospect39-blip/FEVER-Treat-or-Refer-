@@ -9,7 +9,7 @@ import {
   Thermometer,
   UserPlus,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 import { SectionCard } from "@/components/SectionCard";
 import { ToggleChip } from "@/components/ToggleChip";
@@ -23,6 +23,11 @@ import type {
 import { DANGER_SIGN_TILES } from "@/lib/fevergate/danger-signs";
 import { comorbidityOptionsForBand, optionsBySystem } from "@/lib/fevergate/comorbidities";
 import { buildPatientContext } from "@/lib/fevergate/patient-context";
+import {
+  CATCHMENT_LEVEL_OPTIONS,
+  CATCHMENT_LEVELS,
+  type CatchmentZoneSelection,
+} from "@/lib/fevergate/catchment-levels";
 import {
   ADULT_AGE_BANDS,
   CHILD_AGE_BANDS,
@@ -41,6 +46,7 @@ import {
   type ClinicContext,
   type TreatmentPlan,
 } from "@/lib/fevergate/treatment-plan";
+import { mm } from "@/lib/i18n/mm";
 
 interface RegisteredPatient {
   id: string;
@@ -57,12 +63,9 @@ interface SessionResult {
   treatmentPlan: TreatmentPlan;
   clinic: ClinicContext;
   catchment: string;
+  catchmentZones: CatchmentZoneSelection;
   registeredPatient: RegisteredPatient | null;
 }
-
-const NEW_PATIENT = "— New patient —";
-const ALL_VILLAGES = "All villages";
-const NEW_CATCHMENT = "— Type new village —";
 
 const CARD_STYLES: Record<
   TriageDecision,
@@ -70,22 +73,22 @@ const CARD_STYLES: Record<
 > = {
   REFER_IMMEDIATE: {
     bg: "from-rose-600 to-red-700",
-    label: "REFER",
+    label: mm.result.refer,
     reasonClass: "text-rose-50",
   },
   REFER: {
     bg: "from-rose-600 to-red-700",
-    label: "REFER",
+    label: mm.result.refer,
     reasonClass: "text-rose-50",
   },
   TREAT_AND_MONITOR: {
     bg: "from-amber-500 to-orange-600",
-    label: "TREAT & MONITOR",
+    label: mm.result.treatAndMonitor,
     reasonClass: "text-amber-50",
   },
   TREAT: {
     bg: "from-emerald-600 to-teal-700",
-    label: "TREAT",
+    label: mm.result.treat,
     reasonClass: "text-emerald-50",
   },
 };
@@ -95,17 +98,13 @@ export function TriageApp() {
   const [error, setError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string | null>(null);
 
-  const [villages, setVillages] = useState<string[]>([]);
-  const [recentPatients, setRecentPatients] = useState<RegisteredPatient[]>([]);
-
-  const [villageFilter, setVillageFilter] = useState(ALL_VILLAGES);
-  const [revisitId, setRevisitId] = useState<string | null>(null);
-  const [revisitSelect, setRevisitSelect] = useState(NEW_PATIENT);
-  const [catchmentPick, setCatchmentPick] = useState(NEW_CATCHMENT);
   const [catchmentText, setCatchmentText] = useState("");
   const [patientName, setPatientName] = useState("");
+  const [catchmentZones, setCatchmentZones] = useState<CatchmentZoneSelection>(
+    {},
+  );
 
-  const [pathway, setPathway] = useState(PATHWAY_CHILD);
+  const [pathway, setPathway] = useState<string>(PATHWAY_CHILD);
   const [ageBand, setAgeBand] = useState<string>(
     CHILD_AGE_BANDS[defaultAgeBandIndex(PATHWAY_CHILD)],
   );
@@ -125,28 +124,6 @@ export function TriageApp() {
   const [amoxInStock, setAmoxInStock] = useState(false);
   const [paraInStock, setParaInStock] = useState(true);
   const [showClinic, setShowClinic] = useState(false);
-
-  const loadPatients = useCallback(async () => {
-    const params =
-      villageFilter !== ALL_VILLAGES
-        ? `?village=${encodeURIComponent(villageFilter)}`
-        : "";
-    const res = await fetch(`/api/patients${params}`);
-    const data = await res.json();
-    setVillages(data.villages ?? []);
-    setRecentPatients(data.patients ?? []);
-  }, [villageFilter]);
-
-  useEffect(() => {
-    loadPatients();
-  }, [loadPatients]);
-
-  const effectiveCatchment =
-    revisitId != null
-      ? recentPatients.find((p) => p.id === revisitId)?.village ?? ""
-      : catchmentPick === NEW_CATCHMENT
-        ? catchmentText
-        : catchmentPick;
 
   const toggleComorbidity = (c: Comorbidity) => {
     setComorbidities((prev) =>
@@ -177,6 +154,7 @@ export function TriageApp() {
         assessment: session.assessment,
         clinic: session.clinic,
         catchment: session.catchment,
+        catchmentZones: session.catchmentZones,
         actionTaken,
         registeredPatientId: session.registeredPatient?.id ?? null,
         registeredName: session.registeredPatient?.name ?? null,
@@ -188,7 +166,7 @@ export function TriageApp() {
   const handleAssess = async () => {
     setError(null);
     try {
-      const catchment = requireCatchment(effectiveCatchment);
+      const catchment = requireCatchment(catchmentText);
       const clinic = clinicContext();
       const ctx = buildPatientContext({
         ageBand,
@@ -204,21 +182,17 @@ export function TriageApp() {
       const treatmentPlan = buildTreatmentPlan(ctx, assessment, clinic);
 
       let registered: RegisteredPatient | null = null;
-      if (revisitId || (patientName.trim() && catchment)) {
+      if (patientName.trim() && catchment) {
         const res = await fetch("/api/patients/resolve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: revisitId
-              ? recentPatients.find((p) => p.id === revisitId)?.name ?? ""
-              : patientName,
+            name: patientName,
             village: catchment,
-            patientId: revisitId,
           }),
         });
         const data = await res.json();
         registered = data.patient ?? null;
-        await loadPatients();
       }
 
       setResult({
@@ -227,21 +201,21 @@ export function TriageApp() {
         treatmentPlan,
         clinic,
         catchment,
+        catchmentZones,
         registeredPatient: registered,
       });
       setActionNote(null);
     } catch {
-      setError("Village / catchment is required for every encounter.");
+      setError(mm.catchment.requiredError);
     }
   };
 
   const resetForm = () => {
     setResult(null);
     setActionNote(null);
-    setRevisitId(null);
-    setRevisitSelect(NEW_PATIENT);
     setPatientName("");
     setCatchmentText("");
+    setCatchmentZones({});
     setDangerTiles({});
     setComorbidities([]);
   };
@@ -249,7 +223,6 @@ export function TriageApp() {
   const handleNewPatient = async (action: string) => {
     if (result) await logEncounter(result, action);
     resetForm();
-    await loadPatients();
   };
 
   if (result) {
@@ -262,7 +235,7 @@ export function TriageApp() {
     const reason = isRefer
       ? buildReferReason(assessment.referral_reasons, assessment.urgency)
       : assessment.decision === "TREAT_AND_MONITOR"
-        ? `Treat now and re-check in ${assessment.monitoring_days} days.`
+        ? mm.result.monitorReason(assessment.monitoring_days)
         : treatmentPlan.summary;
 
     return (
@@ -271,7 +244,7 @@ export function TriageApp() {
           className={`rounded-3xl bg-gradient-to-br ${style.bg} p-8 text-white shadow-xl shadow-slate-300/40`}
         >
           <p className="text-sm font-medium uppercase tracking-widest opacity-80">
-            Triage decision
+            {mm.result.triageDecision}
           </p>
           <h1 className="mt-1 text-4xl font-extrabold tracking-tight">
             {style.label}
@@ -286,12 +259,15 @@ export function TriageApp() {
 
         {registeredPatient ? (
           <p className="text-center text-sm text-slate-500">
-            {registeredPatient.name} · {registeredPatient.village} (visit #
-            {registeredPatient.visit_count})
+            {mm.result.patientVisit(
+              registeredPatient.name,
+              registeredPatient.village,
+              registeredPatient.visit_count,
+            )}
           </p>
         ) : (
           <p className="text-center text-sm text-slate-500">
-            Catchment: {catchment}
+            {mm.result.catchment(catchment)}
           </p>
         )}
 
@@ -308,7 +284,7 @@ export function TriageApp() {
               onClick={async () => {
                 await logEncounter(result, "teleconsultation_call");
                 setActionNote(
-                  `Dial teleconsultation: ${teleconsultationDialUrl().replace("tel:", "")}`,
+                  `${mm.actions.dialTeleconsultation}: ${teleconsultationDialUrl().replace("tel:", "")}`,
                 );
               }}
               className="flex items-center justify-center gap-2 rounded-xl bg-rose-700 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-rose-800"
@@ -340,7 +316,7 @@ export function TriageApp() {
               type="button"
               onClick={async () => {
                 await logEncounter(result, "start_treatment");
-                setActionNote("Treatment plan acknowledged.");
+                setActionNote(mm.actions.treatmentAcknowledged);
               }}
               className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-emerald-800"
             >
@@ -363,17 +339,12 @@ export function TriageApp() {
             className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            New patient
+            {mm.actions.newPatient}
           </button>
         </div>
       </div>
     );
   }
-
-  const revisitLabels =
-    villageFilter !== ALL_VILLAGES
-      ? [NEW_PATIENT, ...recentPatients.map((p) => p.name)]
-      : [NEW_PATIENT, ...recentPatients.map((p) => p.display_label)];
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-8 pb-16">
@@ -382,16 +353,13 @@ export function TriageApp() {
           <Stethoscope className="h-7 w-7" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          FeverGate
+          {mm.app.title}
         </h1>
-        <p className="mt-1 text-slate-500">
-          Point-of-care treat / refer — screening only
-        </p>
+        <p className="mt-1 text-slate-500">{mm.app.tagline}</p>
       </header>
 
       <SectionCard
-        title="Clinic context"
-        description="Today's stock and malaria endemicity"
+        title={mm.clinic.title}
         icon={<Thermometer className="h-5 w-5" />}
       >
         <button
@@ -399,121 +367,123 @@ export function TriageApp() {
           onClick={() => setShowClinic(!showClinic)}
           className="mb-3 text-sm font-medium text-teal-700 hover:text-teal-800"
         >
-          {showClinic ? "Hide" : "Show"} clinic settings
+          {showClinic ? mm.clinic.hideSettings : mm.clinic.showSettings}
         </button>
         {showClinic && (
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              {(["high", "low"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setEndemicity(v)}
-                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium capitalize ${
-                    endemicity === v
-                      ? "bg-teal-600 text-white"
-                      : "bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {v} endemicity
-                </button>
-              ))}
+          <div className="space-y-5">
+            <div>
+              <p className="mb-3 text-sm font-semibold text-slate-800">
+                {mm.clinic.stockHeading}
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  [mm.clinic.actInStock, actInStock, setActInStock],
+                  [mm.clinic.amoxicillin, amoxInStock, setAmoxInStock],
+                  [mm.clinic.paracetamol, paraInStock, setParaInStock],
+                ].map(([label, val, setter]) => (
+                  <button
+                    key={label as string}
+                    type="button"
+                    onClick={() =>
+                      (setter as (v: boolean) => void)(!(val as boolean))
+                    }
+                    className={`rounded-lg px-2 py-2 text-xs font-medium ${
+                      val
+                        ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {label as string}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                ["ACT in stock", actInStock, setActInStock],
-                ["Amoxicillin", amoxInStock, setAmoxInStock],
-                ["Paracetamol", paraInStock, setParaInStock],
-              ].map(([label, val, setter]) => (
-                <button
-                  key={label as string}
-                  type="button"
-                  onClick={() => (setter as (v: boolean) => void)(!(val as boolean))}
-                  className={`rounded-lg px-2 py-2 text-xs font-medium ${
-                    val
-                      ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300"
-                      : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {label as string}
-                </button>
-              ))}
+            <div>
+              <p className="mb-3 text-sm font-semibold text-slate-800">
+                {mm.clinic.endemicityHeading}
+              </p>
+              <div className="flex gap-2">
+                {(["high", "low"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setEndemicity(v)}
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
+                      endemicity === v
+                        ? "bg-teal-600 text-white"
+                        : "bg-slate-100 text-slate-600"
+                    }`}
+                  >
+                    {v === "high"
+                      ? mm.clinic.highEndemicity
+                      : mm.clinic.lowEndemicity}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
       </SectionCard>
 
       <SectionCard
-        title="Village / catchment"
-        description="Required on every encounter for epidemiologic reporting"
+        title={mm.catchment.title}
+        description={mm.catchment.description}
         icon={<MapPin className="h-5 w-5" />}
       >
         <div className="space-y-3">
-          <select
-            value={villageFilter}
-            onChange={(e) => setVillageFilter(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
-          >
-            <option>{ALL_VILLAGES}</option>
-            {villages.map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={revisitSelect}
-            onChange={(e) => {
-              setRevisitSelect(e.target.value);
-              if (e.target.value === NEW_PATIENT) {
-                setRevisitId(null);
-              } else {
-                const idx = revisitLabels.indexOf(e.target.value) - 1;
-                setRevisitId(recentPatients[idx]?.id ?? null);
-              }
-            }}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
-          >
-            {revisitLabels.map((l) => (
-              <option key={l}>{l}</option>
-            ))}
-          </select>
-
-          {revisitId == null && (
-            <>
-              <select
-                value={catchmentPick}
-                onChange={(e) => setCatchmentPick(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
-              >
-                <option>{NEW_CATCHMENT}</option>
-                {villages.map((v) => (
-                  <option key={v} value={v}>
-                    {v}
-                  </option>
-                ))}
-              </select>
-              {catchmentPick === NEW_CATCHMENT && (
-                <input
-                  value={catchmentText}
-                  onChange={(e) => setCatchmentText(e.target.value)}
-                  placeholder="Enter village / catchment (required)"
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-                />
-              )}
-              <input
-                value={patientName}
-                onChange={(e) => setPatientName(e.target.value)}
-                placeholder="Patient name (optional)"
-                className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-              />
-            </>
-          )}
+          <div>
+            <p className="mb-2 text-sm font-medium text-slate-700">
+              {mm.catchment.zonesTitle}
+            </p>
+            <p className="mb-3 text-xs text-slate-500">
+              {mm.catchment.zonesDescription}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {CATCHMENT_LEVELS.map((level) => (
+                <label key={level} className="block">
+                  <span className="mb-1 flex h-7 w-7 items-center justify-center rounded-lg bg-teal-100 text-sm font-bold text-teal-800">
+                    {level}
+                  </span>
+                  <select
+                    value={catchmentZones[level] ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCatchmentZones((prev) => {
+                        const next = { ...prev };
+                        if (value) next[level] = value;
+                        else delete next[level];
+                        return next;
+                      });
+                    }}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
+                  >
+                    <option value="">{mm.catchment.zoneSelect}</option>
+                    {CATCHMENT_LEVEL_OPTIONS[level].map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+          </div>
+          <input
+            value={catchmentText}
+            onChange={(e) => setCatchmentText(e.target.value)}
+            placeholder={mm.catchment.enterCatchment}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+          />
+          <input
+            value={patientName}
+            onChange={(e) => setPatientName(e.target.value)}
+            placeholder={mm.catchment.patientName}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+          />
         </div>
       </SectionCard>
 
-      <SectionCard title="Age group" icon={<UserPlus className="h-5 w-5" />}>
+      <SectionCard title={mm.age.title} icon={<UserPlus className="h-5 w-5" />}>
         <div className="mb-3 flex gap-2">
           {[PATHWAY_CHILD, PATHWAY_ADULT].map((p) => (
             <button
@@ -556,7 +526,7 @@ export function TriageApp() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Fever">
+      <SectionCard title={mm.fever.title}>
         <div className="grid grid-cols-2 gap-4">
           <label className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3">
             <input
@@ -565,10 +535,10 @@ export function TriageApp() {
               onChange={(e) => setHasFever(e.target.checked)}
               className="h-5 w-5 rounded accent-teal-600"
             />
-            <span className="text-sm font-medium">Fever</span>
+            <span className="text-sm font-medium">{mm.fever.hasFever}</span>
           </label>
           <label className="block">
-            <span className="text-xs text-slate-500">Duration (days)</span>
+            <span className="text-xs text-slate-500">{mm.fever.durationDays}</span>
             <input
               type="number"
               min={0}
@@ -581,20 +551,20 @@ export function TriageApp() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Vitals (optional)">
+      <SectionCard title={mm.vitals.title}>
         <button
           type="button"
           onClick={() => setShowVitals(!showVitals)}
           className="text-sm font-medium text-teal-700"
         >
-          {showVitals ? "Hide vitals" : "Add vitals"}
+          {showVitals ? mm.vitals.hide : mm.vitals.show}
         </button>
         {showVitals && (
           <div className="mt-3 grid grid-cols-3 gap-3">
             {[
-              ["Systolic BP", systolicBp, setSystolicBp],
-              ["SpO₂ %", spo2, setSpo2],
-              ["RR /min", respiratoryRate, setRespiratoryRate],
+              [mm.vitals.systolicBp, systolicBp, setSystolicBp],
+              [mm.vitals.spo2, spo2, setSpo2],
+              [mm.vitals.respiratoryRate, respiratoryRate, setRespiratoryRate],
             ].map(([label, val, setter]) => (
               <label key={label as string} className="block">
                 <span className="text-xs text-slate-500">{label as string}</span>
@@ -614,8 +584,8 @@ export function TriageApp() {
       </SectionCard>
 
       <SectionCard
-        title="Danger signs"
-        description="Tap any that are present"
+        title={mm.dangerSigns.title}
+        description={mm.dangerSigns.description}
       >
         <div className="grid gap-2 sm:grid-cols-2">
           {DANGER_SIGN_TILES.map((tile) => {
@@ -634,11 +604,15 @@ export function TriageApp() {
       </SectionCard>
 
       <SectionCard
-        title={isPediatricPathway(ageBand) ? "High-risk conditions" : "Underlying diseases"}
+        title={
+          isPediatricPathway(ageBand)
+            ? mm.comorbidity.pediatricTitle
+            : mm.comorbidity.adultTitle
+        }
         description={
           isPediatricPathway(ageBand)
-            ? "Sickle cell or severe malnutrition"
-            : "Grouped by organ system"
+            ? mm.comorbidity.pediatricDesc
+            : mm.comorbidity.adultDesc
         }
       >
         {isPediatricPathway(ageBand) ? (
@@ -692,7 +666,7 @@ export function TriageApp() {
         onClick={handleAssess}
         className="w-full rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-4 text-lg font-semibold text-white shadow-lg shadow-teal-200 transition hover:from-teal-700 hover:to-emerald-700"
       >
-        Assess patient
+        {mm.actions.assess}
       </button>
     </div>
   );

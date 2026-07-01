@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import type { Comorbidity } from "@/lib/decision-engine/models";
+import { mm } from "@/lib/i18n/mm";
 import { isAdultPathway, isPediatricPathway } from "./pathways";
 
 export interface ComorbidityOption {
@@ -23,72 +24,72 @@ export interface ComorbidityOption {
 const PEDIATRIC: ComorbidityOption[] = [
   {
     comorbidity: "sickle_cell",
-    system: "Blood",
+    system: mm.comorbidity.systemBlood,
     icon: Droplets,
-    label: "Sickle cell disease",
+    label: mm.comorbidity.sickleCell,
   },
   {
     comorbidity: "severe_malnutrition",
-    system: "Nutrition",
+    system: mm.comorbidity.systemNutrition,
     icon: Leaf,
-    label: "Severe malnutrition",
+    label: mm.comorbidity.severeMalnutrition,
   },
 ];
 
 const ADULT: ComorbidityOption[] = [
   {
     comorbidity: "chronic_heart_disease",
-    system: "Heart",
+    system: mm.comorbidity.systemHeart,
     icon: Heart,
-    label: "Chronic heart disease",
+    label: mm.comorbidity.chronicHeart,
   },
   {
     comorbidity: "chronic_lung_disease",
-    system: "Lungs",
+    system: mm.comorbidity.systemLungs,
     icon: Wind,
-    label: "Chronic lung disease",
+    label: mm.comorbidity.chronicLung,
   },
   {
     comorbidity: "chronic_kidney_disease",
-    system: "Kidneys",
+    system: mm.comorbidity.systemKidneys,
     icon: Activity,
-    label: "Chronic kidney disease",
+    label: mm.comorbidity.chronicKidney,
   },
   {
     comorbidity: "hiv",
-    system: "Immune",
+    system: mm.comorbidity.systemImmune,
     icon: Shield,
-    label: "HIV",
+    label: mm.comorbidity.hiv,
   },
   {
     comorbidity: "immunosuppression",
-    system: "Immune",
+    system: mm.comorbidity.systemImmune,
     icon: Shield,
-    label: "Immunosuppression",
+    label: mm.comorbidity.immunosuppression,
   },
   {
     comorbidity: "sickle_cell",
-    system: "Blood",
+    system: mm.comorbidity.systemBlood,
     icon: Droplets,
-    label: "Sickle cell disease",
+    label: mm.comorbidity.sickleCell,
   },
   {
     comorbidity: "severe_malnutrition",
-    system: "Nutrition",
+    system: mm.comorbidity.systemNutrition,
     icon: Leaf,
-    label: "Severe malnutrition",
+    label: mm.comorbidity.severeMalnutrition,
   },
   {
     comorbidity: "pregnancy",
-    system: "Other",
+    system: mm.comorbidity.systemOther,
     icon: Baby,
-    label: "Pregnancy",
+    label: mm.comorbidity.pregnancy,
   },
   {
     comorbidity: "recent_surgery_or_wound",
-    system: "Other",
+    system: mm.comorbidity.systemOther,
     icon: Bandage,
-    label: "Recent surgery or wound",
+    label: mm.comorbidity.recentSurgery,
   },
 ];
 

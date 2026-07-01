@@ -10,7 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import { DANGER_SIGN_LABELS } from "@/lib/decision-engine/models";
+import { mm } from "@/lib/i18n/mm";
 
 export interface DangerSignTile {
   triggerCode: string;
@@ -20,59 +20,60 @@ export interface DangerSignTile {
   consciousness?: "lethargic" | "unconscious";
 }
 
+/** Order matches clinical checklist (IMCI danger signs). */
 export const DANGER_SIGN_TILES: DangerSignTile[] = [
   {
     triggerCode: "imci:convulsions",
     icon: Zap,
-    label: DANGER_SIGN_LABELS["imci:convulsions"],
+    label: mm.dangerSigns.convulsions,
     dangerField: "convulsions",
-  },
-  {
-    triggerCode: "imci:unable_to_drink_or_breastfeed",
-    icon: Droplets,
-    label: DANGER_SIGN_LABELS["imci:unable_to_drink_or_breastfeed"],
-    dangerField: "unable_to_drink_or_breastfeed",
   },
   {
     triggerCode: "imci:vomits_everything",
     icon: Waves,
-    label: DANGER_SIGN_LABELS["imci:vomits_everything"],
+    label: mm.dangerSigns.vomitsEverything,
     dangerField: "vomits_everything",
-  },
-  {
-    triggerCode: "imci:lethargic",
-    icon: Moon,
-    label: DANGER_SIGN_LABELS["imci:lethargic"],
-    consciousness: "lethargic",
   },
   {
     triggerCode: "imci:unconscious",
     icon: Skull,
-    label: DANGER_SIGN_LABELS["imci:unconscious"],
+    label: mm.dangerSigns.unconscious,
     consciousness: "unconscious",
-  },
-  {
-    triggerCode: "imci:chest_indrawing",
-    icon: Stethoscope,
-    label: DANGER_SIGN_LABELS["imci:chest_indrawing"],
-    dangerField: "chest_indrawing",
   },
   {
     triggerCode: "imci:stiff_neck",
     icon: Brain,
-    label: DANGER_SIGN_LABELS["imci:stiff_neck"],
+    label: mm.dangerSigns.stiffNeck,
     dangerField: "stiff_neck",
-  },
-  {
-    triggerCode: "imci:bulging_fontanelle",
-    icon: Baby,
-    label: DANGER_SIGN_LABELS["imci:bulging_fontanelle"],
-    dangerField: "bulging_fontanelle",
   },
   {
     triggerCode: "imci:severe_palmar_pallor",
     icon: Droplets,
-    label: DANGER_SIGN_LABELS["imci:severe_palmar_pallor"],
+    label: mm.dangerSigns.severePallor,
     dangerField: "severe_palmar_pallor",
+  },
+  {
+    triggerCode: "imci:unable_to_drink_or_breastfeed",
+    icon: Droplets,
+    label: mm.dangerSigns.unableToDrink,
+    dangerField: "unable_to_drink_or_breastfeed",
+  },
+  {
+    triggerCode: "imci:lethargic",
+    icon: Moon,
+    label: mm.dangerSigns.lethargic,
+    consciousness: "lethargic",
+  },
+  {
+    triggerCode: "imci:chest_indrawing",
+    icon: Stethoscope,
+    label: mm.dangerSigns.chestIndrawing,
+    dangerField: "chest_indrawing",
+  },
+  {
+    triggerCode: "imci:bulging_fontanelle",
+    icon: Baby,
+    label: mm.dangerSigns.bulgingFontanelle,
+    dangerField: "bulging_fontanelle",
   },
 ];

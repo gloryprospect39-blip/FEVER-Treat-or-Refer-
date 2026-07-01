@@ -1,0 +1,195 @@
+/** Myanmar (Burmese) UI strings for FeverGate */
+
+export const mm = {
+  app: {
+    title: "FeverGate",
+    tagline: "ပဏာမ အကြမ်းမျဥ်း အသုံးပြုရန်အတွက်သာ",
+    metaTitle: "FeverGate — ကုသရန် သို့မဟုတ် ပို့ဆောင်ရန်",
+    metaDescription:
+      "နယ်စပ်ဆေးခန်း ဖျားနာမှု စစ်ဆေးခြင်း — ကုသရန် / ပို့ဆောင်ရန် ဆုံးဖြတ်ချက်",
+  },
+
+  clinic: {
+    title: "ဆေးခန်း အခြေအနေ",
+    stockHeading: "ယနေ့ စတော့",
+    endemicityHeading: "ဌက်ဖျားရောဂါ ဖြစ်ပွားမှု",
+    showSettings: "ဆက်တင်များ ပြရန်",
+    hideSettings: "ဆက်တင်များ ဝှက်ရန်",
+    highEndemicity: "ဖြစ်ပွားမှု များသော",
+    lowEndemicity: "ဖြစ်ပွားမှု နည်းသော",
+    actInStock: "ဌက်ဖျားဆေး ရှိသည်",
+    amoxicillin: "အမောက်ဆီလင်",
+    paracetamol: "ပါရာစီတမောရှိသည်",
+  },
+
+  catchment: {
+    title: "ကျေးရွာ / နယ်မြေ",
+    description: "သုတေသန အစီရင်ခံရန် တွေ့ဆုံမှုတိုင်းတွင် လိုအပ်သည်",
+    zoneSelect: "— ရွေးချယ်ရန် —",
+    zonesTitle: "နယ်မြေ အဆင့် (A–C)",
+    zonesDescription: "သုတေသန အတွက် A မှ C အထိ ရွေးချယ်ပါ",
+    allVillages: "ကျေးရွာအားလုံး",
+    newPatient: "— လူနာအသစ် —",
+    newCatchment: "— ကျေးရွာအသစ် ရိုက်ထည့်ရန် —",
+    returningPatient: "ပြန်လာသော လူနာ?",
+    enterCatchment: "ကျေးရွာ / နယ်မြေ ရိုက်ထည့်ပါ (လိုအပ်)",
+    patientName: "လူနာ အမည် (မထည့်လည်းရသည်)",
+    requiredError: "ကျေးရွာ / နယ်မြေ လိုအပ်ပါသည်။",
+    label: "နယ်မြေ",
+    revisit: "ပြန်လာခြင်း",
+    visit: "လည်ပတ် အကြိမ်",
+    lastSeen: "နောက်ဆုံး တွေ့ဆုံမှု",
+  },
+
+  age: {
+    title: "အသက်အုပ်စု",
+    pathwayChild: "ကလေး (၁၅ နှစ်အောက်)",
+    pathwayAdult: "လူကြီး (၁၅ နှစ် နှင့် အထက်)",
+    under2Months: "၂ လ မပြည့်",
+    months2to5: "၂ လ – ၅ နှစ်",
+    years5to15: "၅ – ၁၅ နှစ်",
+    years15to17: "၁၅ – ၁၇ နှစ်",
+    years18to64: "၁၈ – ၆၄ နှစ်",
+    years65plus: "၆၅ နှစ် နှင့် အထက်",
+  },
+
+  fever: {
+    title: "ဖျား",
+    hasFever: "ဖျားသည်",
+    durationDays: "ကြာချိန် (ရက်)",
+  },
+
+  vitals: {
+    title: "အခြေခံစမ်းသပ်မှု (မထည့်လည်းရသည်)",
+    show: "အချက်အလက် ထည့်ရန်",
+    hide: "အချက်အလက် ဝှက်ရန်",
+    systolicBp: "ဆီစတိုလစ် သွေးဖိအား",
+    spo2: "SpO₂ %",
+    respiratoryRate: "အသက်ရှုနှုန်း /မိနစ်",
+  },
+
+  dangerSigns: {
+    title: "အန္တရာယ် လက္ခဏာများ",
+    description: "ရှိပါက နှိပ်ရွေးပါ",
+    convulsions: "လူနာ တက်သွားခြင်း",
+    vomitsEverything: "အစားစားတိုင်းအန်နေခြင်း",
+    unconscious: "သတိမေ့လျော့ခြင်း",
+    stiffNeck: "လည်ပင်းကြွက်သားတောင့်တင်းနေခြင်း",
+    severePallor: "ခြေဖဝါး လက်ဖဝါး ဖြူဆုတ်နေခြင်း",
+    unableToDrink: "နို့မစို့ သို့မဟုတ် အစာမစားဝင်ခြင်း",
+    lethargic: "နုန်းချိနေခြင်း",
+    chestIndrawing: "အသက်ရှူလျှင် ရင်ဘတ်ချိုင့်ဝင်နေခြင်း",
+    bulgingFontanelle: "ငယ်ထိပ်ဖောင်းနေခြင်း",
+    neonateFever: "မွေးကင်း ဖျားခြင်း",
+  },
+
+  comorbidity: {
+    pediatricTitle: "အန္တရာယ်မြင့် အခြေအနေများ",
+    pediatricDesc: "သွေးတိုရောဂါ သို့မဟုတ် ကျွန်တော့်ကျပ်စားမှု ပြင်းထန်",
+    adultTitle: "နာတာရှည်ရောဂါများ",
+    adultDesc: "ကိုယ်ခန္ဓာ အစိတ်အပိုင်း အလိုက်",
+    sickleCell: "သွေးတိုရောဂါ",
+    severeMalnutrition: "ကျွန်တော့်ကျပ်စားမှု ပြင်းထန်",
+    chronicHeart: "နာတာရှည် နှလုံးရောဂါ",
+    chronicLung: "နာတာရှည် အဆုတ်ရောဂါ",
+    chronicKidney: "နာတာရှည် ကျောက်ကပ်ရောဂါ",
+    hiv: "HIV",
+    immunosuppression: "ကိုယ်ခံအား အားနည်းခြင်း",
+    pregnancy: "ကိုယ်ဝန်ရှိခြင်း",
+    recentSurgery: "မကြာသေးမီ ခွဲစိတ်ခြင်း သို့မဟုတ် ဒဏ်ရာ",
+    systemBlood: "သွေး",
+    systemNutrition: "အာဟာရ",
+    systemHeart: "နှလုံး",
+    systemLungs: "အဆုတ်",
+    systemKidneys: "ကျောက်ကပ်",
+    systemImmune: "ကိုယ်ခံအား",
+    systemOther: "အခြား",
+  },
+
+  actions: {
+    assess: "လူနာ စစ်ဆေးရန်",
+    newPatient: "လူနာအသစ်",
+    callTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
+    scheduleTeleconsultation: "တယ်လီ အကြံပြု စီစဉ်ရန်",
+    startTreatment: "ကုသမှု စတင်ရန်",
+    treatmentAcknowledged: "ကုသမှု အစီအစဉ်ကို အတည်ပြုပြီး။",
+    dialTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
+  },
+
+  result: {
+    triageDecision: "စစ်ဆေးမှု ရလဒ်",
+    refer: "ပို့ဆောင်ရန်",
+    treatAndMonitor: "ကုသ၍ စောင့်ကြည့်",
+    treat: "ကုသရန်",
+    monitorReason: (days: number) =>
+      `ယခု ကုသပြီး ${days} ရက်အကြာတွင် ပြန်စစ်ဆေးရန်။`,
+    catchment: (name: string) => `နယ်မြေ: ${name}`,
+    patientVisit: (name: string, village: string, visit: number) =>
+      `${name} · ${village} (လည်ပတ် အကြိမ် #${visit})`,
+  },
+
+  referReason: {
+    hypoxia: "အောက်ဆီဂျင် နည်းပါးခြင်း",
+    hypotension: "သွေးဖိအား နည်းပါးခြင်း",
+    weakPulse: "သွေးခုန်နှုန်း အားနည်း သို့မဟုတ် မရှိ",
+    elevatedQsofa: "qSOFA မြင့်မားခြင်း",
+    elevatedNews2: "NEWS2 မြင့်မားခြင်း",
+    elevatedSepsisScreen: "ပြင်းထန်သော ရောဂါ စစ်ဆေးမှု မြင့်မား",
+    elevatedSevereIllness: "ပြင်းထန်သော ရောဂါ လက္ခဏာ မြင့်မား",
+    referImmediately: "ချက်ချင်း ပို့ဆောင်ရန်",
+    referSameDay: "ယနေ့ပို့ဆောင်ရန်",
+    refer: "ပို့ဆောင်ရန်",
+  },
+
+  treatment: {
+    noOutpatient: "လူနာအပြင်ဘက် ကုသမှု မစတင်ရ",
+    noOutpatientDetail:
+      "ပို့ဆောင်ရေး ဆေးရုံသို့ အမြန်သွားရန် စီစဉ်ပါ။ တယ်လီ အကြံပြုခန်း မတိုင်မီ ဒေသန္တရ ပရိုတိုကောလ် အရ တည်ငြိမ်အောင် ကုသပါ။",
+    actOutOfStock:
+      "ဌက်ဖျားရောဂါ ယူဆကုသမှု လိုအပ်သော်လည်း ဌက်ဖျားဆေး မရှိပါ။",
+    actOutOfStockDetail:
+      "ဌက်ဖျားဆေး ရရှိရန် ပို့ဆောင်ရန် သို့မဟုတ် ယူဆကုသမှု မလုပ်မီ စတော့ ရယူပါ။",
+    giveAct: (dose: string) => `ယူဆ ဌက်ဖျားဆေး ပေးရန်: ${dose}။`,
+    actDetail: (dose: string, feverSupport: string) =>
+      `ဌက်ဖျားရောဂါ ဖြစ်ပွားမှု များသောဒေသတွင် ရိုးရှင်းသော ဖျား — ယခု ${dose} စတင်ပါ။${feverSupport} အမြန်စစ်ဆေးမှု မလိုပါ။`,
+    paracetamolForFever: " ဖျားရန် ပါရာစီတမောൾ ပေးပါ။",
+    recheckInDays: (days: number) =>
+      ` ဤလူနာကို ${days} ရက်အကြာတွင် ပြန်စစ်ဆေးရန်။`,
+    giveParacetamol: "ဖျားရန် ပါရာစီတမောൾ ပေးရန်",
+    supportiveFever: (days: number) =>
+      `ရိုးရှင်းသော ဖျားအတွက် ထောက်ပံ့ကုသမှု။ ${days} ရက်အကြာတွင် ပြန်စစ်ဆေးရန်။ အန္တရာယ်လက္ခဏာ ပေါ်ပါက အမြန်ပြန်လာရန်။`,
+    supportiveCare: "ထောက်ပံ့ကုသမှု နှင့် စောင့်ကြည့်ခြင်း",
+    monitorHome: (days: number) =>
+      `အိမ်တွင် စောင့်ကြည့်ပါ။ ${days} ရက်အကြာတွင် ပြန်စစ်ဆေးရန်။ အခြေအနေ ဆိုးပါက အမြန်ပြန်လာရန်။`,
+    noAntimalarial: "ဌက်ဖျားရောဂါ ကုသစရာ မလို",
+    noAntimalarialDetail:
+      "ဖျားမရှိဘဲ အန္တရာယ်နည်း — ပုံမှန်ကြည့်ရှုရေး။ ဖျားပါက ပြန်လာရန် အကြံပြုပါ။",
+    supportiveLowRisk:
+      "အန္တရာယ်နည်း ဖျားရောဂါအတွက် ထောက်ပံ့ကုသမှု — ဌက်ဖျားရောဂါ ယူဆကုသမှု မလို",
+    supportiveGeneral: "ထောက်ပံ့ကုသမှု",
+    supportiveGeneralDetail:
+      "အန္တရာယ်နည်း — အနားယူရန်၊ ရေဓာတ်ပြည့်ဝရန်။ အန္တရာယ်လက္ခဏာ ပေါ်ပါက ပြန်လာရန် အကြံပြုပါ။",
+    actDoseUnder5:
+      "ကိုယ်အလေးချိန် အလိုက် ဌက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် နိုင်ငံတော် ပရိုတိုကော",
+    actDoseChild:
+      "ကိုယ်အလေးချိန် အလိုက် ဌက်ဖျားဆေး (artemether-lumefantrine) — ကလေး နိုင်ငံတော် ပရိုတိုကော",
+    actDoseAdult:
+      "လူကြီး ဌက်ဖျားဆေး (artemether-lumefantrine) — နိုင်ငံတော် ပရိုတိုကော",
+    teleconsultScheduled: (days: number, phone: string) =>
+      `${days} ရက် ပြန်လာချိန် တယ်လီ အကြံပြု စီစဉ်ပြီး။ အခြေအနေ ဆိုးပါက ${phone} သို့ ခေါ်ဆိုပါ။`,
+  },
+} as const;
+
+/** IMCI danger-sign codes → Myanmar labels (for referral reason lines) */
+export const dangerSignLabelsMm: Record<string, string> = {
+  "imci:unable_to_drink_or_breastfeed": mm.dangerSigns.unableToDrink,
+  "imci:vomits_everything": mm.dangerSigns.vomitsEverything,
+  "imci:convulsions": mm.dangerSigns.convulsions,
+  "imci:lethargic": mm.dangerSigns.lethargic,
+  "imci:unconscious": mm.dangerSigns.unconscious,
+  "imci:chest_indrawing": mm.dangerSigns.chestIndrawing,
+  "imci:stiff_neck": mm.dangerSigns.stiffNeck,
+  "imci:bulging_fontanelle": mm.dangerSigns.bulgingFontanelle,
+  "imci:severe_palmar_pallor": mm.dangerSigns.severePallor,
+  neonate_fever: mm.dangerSigns.neonateFever,
+};
