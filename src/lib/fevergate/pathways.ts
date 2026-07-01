@@ -1,32 +1,34 @@
+import { mm } from "@/lib/i18n/mm";
+
 export const AGE_BANDS: Record<string, number> = {
-  "Under 2 months": 1,
-  "2 months – 5 years": 24,
-  "5–15 years": 96,
-  "15–17 years": 192,
-  "18–64 years": 480,
-  "65+ years": 840,
+  [mm.age.under2Months]: 1,
+  [mm.age.months2to5]: 24,
+  [mm.age.years5to15]: 96,
+  [mm.age.years15to17]: 192,
+  [mm.age.years18to64]: 480,
+  [mm.age.years65plus]: 840,
 };
 
-export const PATHWAY_CHILD = "Child (under 15)";
-export const PATHWAY_ADULT = "Adult (15+)";
+export const PATHWAY_CHILD = mm.age.pathwayChild;
+export const PATHWAY_ADULT = mm.age.pathwayAdult;
 
 export const CHILD_AGE_BANDS = [
-  "Under 2 months",
-  "2 months – 5 years",
-  "5–15 years",
+  mm.age.under2Months,
+  mm.age.months2to5,
+  mm.age.years5to15,
 ] as const;
 
 export const ADULT_AGE_BANDS = [
-  "15–17 years",
-  "18–64 years",
-  "65+ years",
+  mm.age.years15to17,
+  mm.age.years18to64,
+  mm.age.years65plus,
 ] as const;
 
 export function ageBandsForPathway(pathway: string): readonly string[] {
   return pathway === PATHWAY_ADULT ? ADULT_AGE_BANDS : CHILD_AGE_BANDS;
 }
 
-export function defaultAgeBandIndex(pathway: string): number {
+export function defaultAgeBandIndex(_pathway: string): number {
   return 1;
 }
 

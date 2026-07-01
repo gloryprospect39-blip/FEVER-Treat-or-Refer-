@@ -24,8 +24,9 @@ def _row(
     registration: dict | None = None,
     endemicity: str = "high",
     act_in_stock: bool = True,
+    catchment_zones: dict | None = None,
 ) -> dict:
-    return {
+    row = {
         "timestamp": f"2026-06-{day}T10:00:00+00:00",
         "catchment": catchment,
         "registration": registration,
@@ -45,6 +46,9 @@ def _row(
         },
         "action_taken": "assess",
     }
+    if catchment_zones is not None:
+        row["catchment_zones"] = catchment_zones
+    return row
 
 
 def test_filter_encounters_by_range():
@@ -102,6 +106,53 @@ def test_build_weekly_report_from_jsonl(tmp_path: Path):
     assert "Hill Settlement" in report
     assert "Total febrile encounters | **2**" in report
     assert "Old Week" not in report.split("## 2.")[1].split("## 3.")[0]
+
+
+def test_compute_week_metrics_catchment_zones():
+    rows = [
+        _row(
+            day="24",
+            decision="REFER",
+            catchment_zones={"A": "A1 — Hill corridor", "B": "B1 — North ridge"},
+        ),
+        _row(
+            day="25",
+            catchment_zones={"A": "A1 — Hill corridor", "C": "C2 — Lower settlement"},
+        ),
+        _row(day="26"),
+    ]
+    metrics = compute_week_metrics(rows)
+    assert metrics.zone_encounters_with_zones == 2
+    assert metrics.zones_by_level["A"]["A1 — Hill corridor"] == 2
+    assert metrics.zones_by_level["B"]["B1 — North ridge"] == 1
+    assert metrics.zones_by_level["C"]["C2 — Lower settlement"] == 1
+    assert metrics.referrals_by_zone_level["A"]["A1 — Hill corridor"] == 1
+
+
+def test_weekly_report_includes_zone_sections(tmp_path: Path):
+    log_file = tmp_path / "encounters.jsonl"
+    rows = [
+        _row(
+            day="24",
+            catchment_zones={"A": "A1 — Hill corridor", "B": "B2 — East fields"},
+        ),
+    ]
+    with log_file.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row) + "\n")
+
+    report = build_weekly_report(
+        week_start=date(2026, 6, 23),
+        week_end=date(2026, 6, 29),
+        log_path=log_file,
+        db_path=tmp_path / "empty.db",
+    )
+    assert "## 3. Encounters by catchment zone (A / B / C)" in report
+    assert "### Level A" in report
+    assert "### Level B" in report
+    assert "### Level C" in report
+    assert "A1 — Hill corridor" in report
+    assert "Encounters with zone A/B/C | **1**" in report
 
 
 def test_format_includes_registry_count(tmp_path: Path):
