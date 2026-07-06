@@ -4,11 +4,12 @@ import type {
   DangerSigns,
   PatientContext,
 } from "@/lib/decision-engine/models";
-import { DANGER_SIGN_TILES } from "./danger-signs";
+import { dangerSignTilesForPathway } from "./danger-signs";
 import { filterComorbiditiesForBand } from "./comorbidities";
 import { AGE_BANDS } from "./pathways";
 
 export function buildPatientContext(input: {
+  pathway: string;
   ageBand: string;
   hasFever: boolean;
   feverDurationDays: number;
@@ -21,7 +22,7 @@ export function buildPatientContext(input: {
   const dangerSigns: DangerSigns = {};
   let consciousness: ConsciousnessLevel = "alert";
 
-  for (const tile of DANGER_SIGN_TILES) {
+  for (const tile of dangerSignTilesForPathway(input.pathway)) {
     if (!input.selectedTiles[tile.triggerCode]) continue;
     if (tile.dangerField) {
       dangerSigns[tile.dangerField] = true;

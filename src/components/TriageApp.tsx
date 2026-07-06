@@ -8,7 +8,7 @@ import {
   Thermometer,
   UserPlus,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { SectionCard } from "@/components/SectionCard";
 import { ToggleChip } from "@/components/ToggleChip";
@@ -19,7 +19,7 @@ import type {
   PatientContext,
   TriageDecision,
 } from "@/lib/decision-engine/models";
-import { DANGER_SIGN_TILES } from "@/lib/fevergate/danger-signs";
+import { dangerSignTilesForPathway } from "@/lib/fevergate/danger-signs";
 import { comorbidityOptionsForBand, optionsBySystem } from "@/lib/fevergate/comorbidities";
 import { buildPatientContext } from "@/lib/fevergate/patient-context";
 import {
@@ -100,6 +100,15 @@ export function TriageApp() {
   const [paraInStock, setParaInStock] = useState(true);
   const [showClinic, setShowClinic] = useState(false);
 
+  useEffect(() => {
+    const bands = ageBandsForPathway(pathway);
+    if (!(bands as readonly string[]).includes(ageBand)) {
+      setAgeBand(bands[defaultAgeBandIndex(pathway)]);
+      setDangerTiles({});
+      setComorbidities([]);
+    }
+  }, [pathway, ageBand]);
+
   const toggleComorbidity = (c: Comorbidity) => {
     setComorbidities((prev) =>
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
@@ -138,6 +147,7 @@ export function TriageApp() {
     try {
       const clinic = clinicContext();
       const ctx = buildPatientContext({
+        pathway,
         ageBand,
         hasFever,
         feverDurationDays: feverDays,
@@ -371,6 +381,7 @@ export function TriageApp() {
                 const bands = ageBandsForPathway(p);
                 setAgeBand(bands[defaultAgeBandIndex(p)]);
                 setComorbidities([]);
+                setDangerTiles({});
               }}
               className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium ${
                 pathway === p
@@ -390,6 +401,7 @@ export function TriageApp() {
               onClick={() => {
                 setAgeBand(band);
                 setComorbidities([]);
+                setDangerTiles({});
               }}
               className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                 ageBand === band
@@ -461,15 +473,23 @@ export function TriageApp() {
       </SectionCard>
 
       <SectionCard
-        title={mm.dangerSigns.title}
-        description={mm.dangerSigns.description}
+        title={
+          pathway === PATHWAY_ADULT
+            ? mm.dangerSigns.adultTitle
+            : mm.dangerSigns.pediatricTitle
+        }
+        description={
+          pathway === PATHWAY_ADULT
+            ? mm.dangerSigns.adultDesc
+            : mm.dangerSigns.pediatricDesc
+        }
       >
         <div className="grid gap-2 sm:grid-cols-2">
-          {DANGER_SIGN_TILES.map((tile) => {
+          {dangerSignTilesForPathway(pathway).map((tile) => {
             const Icon = tile.icon;
             return (
               <ToggleChip
-                key={tile.triggerCode}
+                key={`${pathway}-${tile.triggerCode}`}
                 active={!!dangerTiles[tile.triggerCode]}
                 onClick={() => toggleDanger(tile.triggerCode)}
                 icon={<Icon className="h-5 w-5" />}

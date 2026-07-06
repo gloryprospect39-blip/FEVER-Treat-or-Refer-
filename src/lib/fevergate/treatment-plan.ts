@@ -156,9 +156,3 @@ export function scheduleTeleconsultationNote(monitoringDays: number): string {
     TELECONSULTATION_NUMBER,
   );
 }
-
-export function requireCatchment(value: string): string {
-  const normalized = value.trim().replace(/\s+/g, " ");
-  if (!normalized) throw new Error("catchment is required");
-  return normalized;
-}

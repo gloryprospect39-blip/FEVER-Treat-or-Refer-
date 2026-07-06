@@ -1,0 +1,1 @@
+"""FeverGate Streamlit UI package."""

@@ -10,7 +10,7 @@ from decision_engine.models import (
     VitalSigns,
 )
 from ui.comorbidity_options import filter_comorbidities_for_band
-from ui.danger_sign_labels import DANGER_SIGN_TILES
+from ui.danger_sign_labels import danger_sign_tiles_for_band
 from ui.pathways import (
     ADULT_AGE_BANDS,
     AGE_BANDS,
@@ -31,6 +31,12 @@ __all__ = [
 ]
 
 
+def _danger_sign_tiles_for_pathway(pathway_label: str):
+    from ui.danger_sign_labels import danger_sign_tiles_for_pathway
+
+    return danger_sign_tiles_for_pathway(pathway_label)
+
+
 def build_patient_context(
     age_band: str,
     has_fever: bool,
@@ -40,11 +46,18 @@ def build_patient_context(
     systolic_bp: int | None = None,
     spo2_percent: int | None = None,
     respiratory_rate: int | None = None,
+    *,
+    pathway: str | None = None,
 ) -> PatientContext:
     danger_kwargs: dict[str, bool] = {}
     consciousness = ConsciousnessLevel.ALERT
 
-    for tile in DANGER_SIGN_TILES:
+    tiles = (
+        _danger_sign_tiles_for_pathway(pathway)
+        if pathway is not None
+        else danger_sign_tiles_for_band(age_band)
+    )
+    for tile in tiles:
         if not selected_tiles.get(tile.trigger_code):
             continue
         if tile.danger_field:
