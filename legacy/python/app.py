@@ -13,18 +13,11 @@ import streamlit as st
 
 from decision_engine import evaluate_febrile_patient
 from decision_engine.models import Comorbidity, TriageDecision
-from ui.catchment import require_catchment
 from ui.clinic_context import ClinicContext, MalariaEndemicity
 from ui.comorbidity_options import comorbidity_options_for_band, options_by_system
 from ui.danger_sign_labels import DANGER_SIGN_TILES
 from ui.encounter_log import log_encounter
 from ui.patient_context import build_patient_context
-from ui.patient_registry import (
-    RegisteredPatient,
-    list_recent_patients,
-    list_villages,
-    resolve_patient_for_encounter,
-)
 from ui.pathways import (
     PATHWAY_ADULT,
     PATHWAY_CHILD,
@@ -35,10 +28,6 @@ from ui.pathways import (
 from ui.refer_reason import build_refer_reason
 from ui.teleconsultation import schedule_teleconsultation_note, teleconsultation_dial_url
 from ui.treatment_plan import build_treatment_plan
-
-NEW_PATIENT_LABEL = "\u2014 New patient \u2014"
-ALL_VILLAGES_LABEL = "All villages"
-NEW_CATCHMENT_LABEL = "\u2014 Type new village \u2014"
 
 CARD_CSS = """
 <style>
@@ -92,63 +81,6 @@ def reset_to_form() -> None:
     st.session_state.pop("assessment", None)
     st.session_state.pop("patient_context", None)
     st.session_state.pop("treatment_plan", None)
-    st.session_state.pop("registered_patient", None)
-    st.session_state.pop("catchment", None)
-    for key in ("revisit_select", "reg_patient_name", "reg_village", "village_filter", "catchment_pick"):
-        st.session_state.pop(key, None)
-
-
-def _render_patient_registration() -> tuple[str, str, str | None]:
-    """Catchment (required), optional name, and optional existing patient id for a revisit."""
-    st.subheader("Village / catchment")
-    st.caption("Required on every encounter for epidemiologic reporting.")
-
-    villages = list_villages()
-    village_filter = st.selectbox(
-        "Filter by village",
-        [ALL_VILLAGES_LABEL, *villages],
-        key="village_filter",
-    )
-    active_village = (
-        None if village_filter == ALL_VILLAGES_LABEL else village_filter
-    )
-
-    recent = list_recent_patients(village=active_village)
-    if active_village:
-        labels = [NEW_PATIENT_LABEL, *[patient.name for patient in recent]]
-    else:
-        labels = [NEW_PATIENT_LABEL, *[patient.display_label for patient in recent]]
-
-    revisit = st.selectbox("Returning patient?", labels, key="revisit_select")
-    if revisit != NEW_PATIENT_LABEL:
-        patient = recent[labels.index(revisit) - 1]
-        st.caption(
-            f"Revisit \u2014 {patient.village} \u00b7 visit #{patient.visit_count + 1} "
-            f"(last seen {patient.last_seen_at[:10]})"
-        )
-        return patient.name, patient.village, patient.id
-
-    catchment_options = [NEW_CATCHMENT_LABEL, *villages]
-    pick = st.selectbox(
-        "Village / catchment",
-        catchment_options,
-        key="catchment_pick",
-    )
-    if pick == NEW_CATCHMENT_LABEL:
-        catchment = st.text_input(
-            "Enter village / catchment",
-            key="reg_village",
-            placeholder="Required",
-        )
-    else:
-        catchment = pick
-
-    name = st.text_input(
-        "Patient name",
-        key="reg_patient_name",
-        placeholder="Optional",
-    )
-    return name, catchment, None
 
 
 def _render_clinic_context() -> None:
@@ -227,8 +159,6 @@ def render_form() -> None:
 
     _render_clinic_context()
 
-    reg_name, reg_village, revisit_id = _render_patient_registration()
-
     band = _render_age_selector()
 
     fever_col, dur_col = st.columns(2)
@@ -282,11 +212,6 @@ def render_form() -> None:
 
     if st.button("Assess patient", type="primary", use_container_width=True):
         try:
-            catchment = require_catchment(reg_village)
-        except ValueError:
-            st.error("Village / catchment is required for every encounter.")
-            return
-        try:
             clinic = _clinic_context_from_session()
             ctx = build_patient_context(
                 age_band=band,
@@ -300,18 +225,10 @@ def render_form() -> None:
             )
             assessment = evaluate_febrile_patient(ctx)
             plan = build_treatment_plan(ctx, assessment, clinic)
-            registered = resolve_patient_for_encounter(
-                reg_name, catchment, patient_id=revisit_id
-            )
             st.session_state["patient_context"] = ctx
             st.session_state["clinic_context"] = clinic
             st.session_state["assessment"] = assessment
             st.session_state["treatment_plan"] = plan
-            st.session_state["catchment"] = catchment
-            if registered:
-                st.session_state["registered_patient"] = registered
-            else:
-                st.session_state.pop("registered_patient", None)
             st.session_state["show_result"] = True
             st.rerun()
         except Exception:
@@ -334,23 +251,12 @@ def _log_action(action: str) -> None:
     ctx = st.session_state.get("patient_context")
     assessment = st.session_state.get("assessment")
     clinic = st.session_state.get("clinic_context", _clinic_context_from_session())
-    registered = st.session_state.get("registered_patient")
-    catchment = st.session_state.get("catchment")
-    if ctx is not None and assessment is not None and catchment:
-        reg_id = reg_name = reg_village = None
-        if isinstance(registered, RegisteredPatient):
-            reg_id = registered.id
-            reg_name = registered.name
-            reg_village = registered.village
+    if ctx is not None and assessment is not None:
         log_encounter(
             ctx,
             assessment,
             clinic,
-            catchment=catchment,
             action_taken=action,
-            registered_patient_id=reg_id,
-            registered_name=reg_name,
-            registered_village=reg_village,
         )
 
 
@@ -369,16 +275,6 @@ def render_result() -> None:
 
     decision = assessment.decision
     st.markdown(CARD_CSS, unsafe_allow_html=True)
-
-    registered = st.session_state.get("registered_patient")
-    catchment = st.session_state.get("catchment")
-    if isinstance(registered, RegisteredPatient):
-        st.caption(
-            f"{registered.name} \u00b7 {registered.village} "
-            f"(visit #{registered.visit_count})"
-        )
-    elif catchment:
-        st.caption(f"Catchment: {catchment}")
 
     if decision in {TriageDecision.REFER_IMMEDIATE, TriageDecision.REFER}:
         reason = build_refer_reason(assessment.referral_reasons, assessment.urgency)

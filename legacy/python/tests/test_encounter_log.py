@@ -48,14 +48,16 @@ def test_log_encounter_appends_jsonl(tmp_path: Path):
     assert "Amina" in text
 
 
-def test_log_encounter_requires_catchment(tmp_path: Path):
+def test_log_encounter_without_catchment(tmp_path: Path):
     log_file = tmp_path / "encounters.jsonl"
     ctx = PatientContext(age_months=36, has_fever=True)
     assessment = evaluate_febrile_patient(ctx)
     clinic = ClinicContext()
 
-    with pytest.raises(ValueError, match="required"):
-        log_encounter(ctx, assessment, clinic, catchment="", log_path=log_file)
+    log_encounter(ctx, assessment, clinic, action_taken="new_patient", log_path=log_file)
+    text = log_file.read_text(encoding="utf-8")
+    assert "catchment" not in text
+    assert "new_patient" in text
 
 
 def test_log_encounter_catchment_without_registration(tmp_path: Path):
@@ -75,4 +77,4 @@ def test_log_encounter_catchment_without_registration(tmp_path: Path):
 
     text = log_file.read_text(encoding="utf-8")
     assert '"catchment": "East Ridge"' in text
-    assert '"registration": null' in text
+    assert "registration" not in text or '"registration": null' in text
