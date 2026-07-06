@@ -5,16 +5,13 @@ import path from "path";
 
 import type { FebrileAssessment, PatientContext } from "@/lib/decision-engine/models";
 import type { ClinicContext } from "@/lib/fevergate/treatment-plan";
-import type { CatchmentZoneSelection } from "@/lib/fevergate/catchment-levels";
-import { requireCatchment } from "@/lib/fevergate/treatment-plan";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const LOG_PATH = path.join(DATA_DIR, "encounters.jsonl");
 
 export interface EncounterRow {
   timestamp: string;
-  catchment: string;
-  catchment_zones?: CatchmentZoneSelection;
+  catchment?: string;
   registration: {
     id: string;
     name: string | null;
@@ -30,15 +27,13 @@ export function logEncounter(input: {
   ctx: PatientContext;
   assessment: FebrileAssessment;
   clinic: ClinicContext;
-  catchment: string;
   actionTaken?: string | null;
-  catchmentZones?: CatchmentZoneSelection;
+  catchment?: string | null;
   registeredPatientId?: string | null;
   registeredName?: string | null;
   registeredVillage?: string | null;
 }): void {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  const catchmentValue = requireCatchment(input.catchment);
 
   const registration = input.registeredPatientId
     ? {
@@ -50,17 +45,15 @@ export function logEncounter(input: {
 
   const row: EncounterRow = {
     timestamp: new Date().toISOString(),
-    catchment: catchmentValue,
-    catchment_zones:
-      input.catchmentZones && Object.keys(input.catchmentZones).length
-        ? input.catchmentZones
-        : undefined,
     registration,
     patient: input.ctx,
     clinic: input.clinic,
     assessment: input.assessment,
     action_taken: input.actionTaken ?? null,
   };
+  if (input.catchment?.trim()) {
+    row.catchment = input.catchment.trim();
+  }
 
   fs.appendFileSync(LOG_PATH, JSON.stringify(row) + "\n", "utf-8");
 }

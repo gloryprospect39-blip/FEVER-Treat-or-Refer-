@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import { logEncounter } from "@/lib/db/encounters";
 import type { FebrileAssessment, PatientContext } from "@/lib/decision-engine/models";
 import type { ClinicContext } from "@/lib/fevergate/treatment-plan";
-import type { CatchmentZoneSelection } from "@/lib/fevergate/catchment-levels";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -12,8 +11,7 @@ export async function POST(request: Request) {
       ctx: body.patient as PatientContext,
       assessment: body.assessment as FebrileAssessment,
       clinic: body.clinic as ClinicContext,
-      catchment: body.catchment,
-      catchmentZones: body.catchmentZones as CatchmentZoneSelection | undefined,
+      catchment: body.catchment ?? null,
       actionTaken: body.actionTaken ?? null,
       registeredPatientId: body.registeredPatientId ?? null,
       registeredName: body.registeredName ?? null,

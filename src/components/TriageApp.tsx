@@ -3,7 +3,6 @@
 import {
   ArrowLeft,
   Calendar,
-  MapPin,
   Phone,
   Stethoscope,
   Thermometer,
@@ -24,11 +23,6 @@ import { DANGER_SIGN_TILES } from "@/lib/fevergate/danger-signs";
 import { comorbidityOptionsForBand, optionsBySystem } from "@/lib/fevergate/comorbidities";
 import { buildPatientContext } from "@/lib/fevergate/patient-context";
 import {
-  CATCHMENT_LEVEL_OPTIONS,
-  CATCHMENT_LEVELS,
-  type CatchmentZoneSelection,
-} from "@/lib/fevergate/catchment-levels";
-import {
   ADULT_AGE_BANDS,
   CHILD_AGE_BANDS,
   PATHWAY_ADULT,
@@ -40,7 +34,6 @@ import {
 import { buildReferReason } from "@/lib/fevergate/treatment-plan";
 import {
   buildTreatmentPlan,
-  requireCatchment,
   scheduleTeleconsultationNote,
   teleconsultationDialUrl,
   type ClinicContext,
@@ -48,23 +41,11 @@ import {
 } from "@/lib/fevergate/treatment-plan";
 import { mm } from "@/lib/i18n/mm";
 
-interface RegisteredPatient {
-  id: string;
-  name: string;
-  village: string;
-  visit_count: number;
-  display_label: string;
-  last_seen_at: string;
-}
-
 interface SessionResult {
   assessment: FebrileAssessment;
   patientContext: PatientContext;
   treatmentPlan: TreatmentPlan;
   clinic: ClinicContext;
-  catchment: string;
-  catchmentZones: CatchmentZoneSelection;
-  registeredPatient: RegisteredPatient | null;
 }
 
 const CARD_STYLES: Record<
@@ -97,12 +78,6 @@ export function TriageApp() {
   const [result, setResult] = useState<SessionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string | null>(null);
-
-  const [catchmentText, setCatchmentText] = useState("");
-  const [patientName, setPatientName] = useState("");
-  const [catchmentZones, setCatchmentZones] = useState<CatchmentZoneSelection>(
-    {},
-  );
 
   const [pathway, setPathway] = useState<string>(PATHWAY_CHILD);
   const [ageBand, setAgeBand] = useState<string>(
@@ -153,20 +128,14 @@ export function TriageApp() {
         patient: session.patientContext,
         assessment: session.assessment,
         clinic: session.clinic,
-        catchment: session.catchment,
-        catchmentZones: session.catchmentZones,
         actionTaken,
-        registeredPatientId: session.registeredPatient?.id ?? null,
-        registeredName: session.registeredPatient?.name ?? null,
-        registeredVillage: session.registeredPatient?.village ?? null,
       }),
     });
   };
 
-  const handleAssess = async () => {
+  const handleAssess = () => {
     setError(null);
     try {
-      const catchment = requireCatchment(catchmentText);
       const clinic = clinicContext();
       const ctx = buildPatientContext({
         ageBand,
@@ -181,41 +150,21 @@ export function TriageApp() {
       const assessment = evaluateFebrilePatient(ctx);
       const treatmentPlan = buildTreatmentPlan(ctx, assessment, clinic);
 
-      let registered: RegisteredPatient | null = null;
-      if (patientName.trim() && catchment) {
-        const res = await fetch("/api/patients/resolve", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: patientName,
-            village: catchment,
-          }),
-        });
-        const data = await res.json();
-        registered = data.patient ?? null;
-      }
-
       setResult({
         assessment,
         patientContext: ctx,
         treatmentPlan,
         clinic,
-        catchment,
-        catchmentZones,
-        registeredPatient: registered,
       });
       setActionNote(null);
     } catch {
-      setError(mm.catchment.requiredError);
+      setError("ထည့်သွင်းမှု စစ်ဆေးပြီး ပြန်ကြိုးစားပါ။");
     }
   };
 
   const resetForm = () => {
     setResult(null);
     setActionNote(null);
-    setPatientName("");
-    setCatchmentText("");
-    setCatchmentZones({});
     setDangerTiles({});
     setComorbidities([]);
   };
@@ -226,7 +175,7 @@ export function TriageApp() {
   };
 
   if (result) {
-    const { assessment, treatmentPlan, registeredPatient, catchment } = result;
+    const { assessment, treatmentPlan } = result;
     const style = CARD_STYLES[assessment.decision];
     const isRefer =
       assessment.decision === "REFER" ||
@@ -256,20 +205,6 @@ export function TriageApp() {
             {treatmentPlan.detail}
           </p>
         </div>
-
-        {registeredPatient ? (
-          <p className="text-center text-sm text-slate-500">
-            {mm.result.patientVisit(
-              registeredPatient.name,
-              registeredPatient.village,
-              registeredPatient.visit_count,
-            )}
-          </p>
-        ) : (
-          <p className="text-center text-sm text-slate-500">
-            {mm.result.catchment(catchment)}
-          </p>
-        )}
 
         {actionNote && (
           <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
@@ -423,64 +358,6 @@ export function TriageApp() {
             </div>
           </div>
         )}
-      </SectionCard>
-
-      <SectionCard
-        title={mm.catchment.title}
-        description={mm.catchment.description}
-        icon={<MapPin className="h-5 w-5" />}
-      >
-        <div className="space-y-3">
-          <div>
-            <p className="mb-2 text-sm font-medium text-slate-700">
-              {mm.catchment.zonesTitle}
-            </p>
-            <p className="mb-3 text-xs text-slate-500">
-              {mm.catchment.zonesDescription}
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {CATCHMENT_LEVELS.map((level) => (
-                <label key={level} className="block">
-                  <span className="mb-1 flex h-7 w-7 items-center justify-center rounded-lg bg-teal-100 text-sm font-bold text-teal-800">
-                    {level}
-                  </span>
-                  <select
-                    value={catchmentZones[level] ?? ""}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setCatchmentZones((prev) => {
-                        const next = { ...prev };
-                        if (value) next[level] = value;
-                        else delete next[level];
-                        return next;
-                      });
-                    }}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
-                  >
-                    <option value="">{mm.catchment.zoneSelect}</option>
-                    {CATCHMENT_LEVEL_OPTIONS[level].map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-          </div>
-          <input
-            value={catchmentText}
-            onChange={(e) => setCatchmentText(e.target.value)}
-            placeholder={mm.catchment.enterCatchment}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-          />
-          <input
-            value={patientName}
-            onChange={(e) => setPatientName(e.target.value)}
-            placeholder={mm.catchment.patientName}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-          />
-        </div>
       </SectionCard>
 
       <SectionCard title={mm.age.title} icon={<UserPlus className="h-5 w-5" />}>
