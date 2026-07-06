@@ -11,12 +11,6 @@ const LOG_PATH = path.join(DATA_DIR, "encounters.jsonl");
 
 export interface EncounterRow {
   timestamp: string;
-  catchment?: string;
-  registration: {
-    id: string;
-    name: string | null;
-    village: string | null;
-  } | null;
   patient: PatientContext;
   clinic: ClinicContext;
   assessment: FebrileAssessment;
@@ -28,32 +22,16 @@ export function logEncounter(input: {
   assessment: FebrileAssessment;
   clinic: ClinicContext;
   actionTaken?: string | null;
-  catchment?: string | null;
-  registeredPatientId?: string | null;
-  registeredName?: string | null;
-  registeredVillage?: string | null;
 }): void {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
-  const registration = input.registeredPatientId
-    ? {
-        id: input.registeredPatientId,
-        name: input.registeredName ?? null,
-        village: input.registeredVillage ?? null,
-      }
-    : null;
-
   const row: EncounterRow = {
     timestamp: new Date().toISOString(),
-    registration,
     patient: input.ctx,
     clinic: input.clinic,
     assessment: input.assessment,
     action_taken: input.actionTaken ?? null,
   };
-  if (input.catchment?.trim()) {
-    row.catchment = input.catchment.trim();
-  }
 
   fs.appendFileSync(LOG_PATH, JSON.stringify(row) + "\n", "utf-8");
 }

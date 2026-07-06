@@ -22,25 +22,6 @@ export const mm = {
     paracetamol: "ပါရာစီတမောရှိသည်",
   },
 
-  catchment: {
-    title: "ကျေးရွာ / နယ်မြေ",
-    description: "သုတေသန အစီရင်ခံရန် တွေ့ဆုံမှုတိုင်းတွင် လိုအပ်သည်",
-    zoneSelect: "— ရွေးချယ်ရန် —",
-    zonesTitle: "နယ်မြေ အဆင့် (A–C)",
-    zonesDescription: "သုတေသန အတွက် A မှ C အထိ ရွေးချယ်ပါ",
-    allVillages: "ကျေးရွာအားလုံး",
-    newPatient: "— လူနာအသစ် —",
-    newCatchment: "— ကျေးရွာအသစ် ရိုက်ထည့်ရန် —",
-    returningPatient: "ပြန်လာသော လူနာ?",
-    enterCatchment: "ကျေးရွာ / နယ်မြေ ရိုက်ထည့်ပါ (လိုအပ်)",
-    patientName: "လူနာ အမည် (မထည့်လည်းရသည်)",
-    requiredError: "ကျေးရွာ / နယ်မြေ လိုအပ်ပါသည်။",
-    label: "နယ်မြေ",
-    revisit: "ပြန်လာခြင်း",
-    visit: "လည်ပတ် အကြိမ်",
-    lastSeen: "နောက်ဆုံး တွေ့ဆုံမှု",
-  },
-
   age: {
     title: "အသက်အုပ်စု",
     pathwayChild: "ကလေး (၁၅ နှစ်အောက်)",
@@ -69,6 +50,10 @@ export const mm = {
   },
 
   dangerSigns: {
+    pediatricTitle: "အန္တရာယ် လက္ခဏာများ (ကလေး)",
+    pediatricDesc: "IMCI လက္ခဏာများ — ရှိပါက နှိပ်ရွေးပါ",
+    adultTitle: "အန္တရာယ် လက္ခဏာများ (လူကြီး)",
+    adultDesc: "လူကြီးများအတွက် အန္တရာယ် လက္ခဏာများ — ရှိပါက နှိပ်ရွေးပါ",
     title: "အန္တရာယ် လက္ခဏာများ",
     description: "ရှိပါက နှိပ်ရွေးပါ",
     convulsions: "လူနာ တက်သွားခြင်း",
@@ -85,11 +70,11 @@ export const mm = {
 
   comorbidity: {
     pediatricTitle: "အန္တရာယ်မြင့် အခြေအနေများ",
-    pediatricDesc: "သွေးတိုရောဂါ သို့မဟုတ် ကျွန်တော့်ကျပ်စားမှု ပြင်းထန်",
+    pediatricDesc: "သွေးအားနည်း သို့မဟုတ် အာဟာရချို့တဲ့မှု",
     adultTitle: "နာတာရှည်ရောဂါများ",
     adultDesc: "ကိုယ်ခန္ဓာ အစိတ်အပိုင်း အလိုက်",
-    sickleCell: "သွေးတိုရောဂါ",
-    severeMalnutrition: "ကျွန်တော့်ကျပ်စားမှု ပြင်းထန်",
+    sickleCell: "သွေးအားနည်း",
+    severeMalnutrition: "အာဟာရချို့တဲ့မှု",
     chronicHeart: "နာတာရှည် နှလုံးရောဂါ",
     chronicLung: "နာတာရှည် အဆုတ်ရောဂါ",
     chronicKidney: "နာတာရှည် ကျောက်ကပ်ရောဂါ",
@@ -123,9 +108,6 @@ export const mm = {
     treat: "ကုသရန်",
     monitorReason: (days: number) =>
       `ယခု ကုသပြီး ${days} ရက်အကြာတွင် ပြန်စစ်ဆေးရန်။`,
-    catchment: (name: string) => `နယ်မြေ: ${name}`,
-    patientVisit: (name: string, village: string, visit: number) =>
-      `${name} · ${village} (လည်ပတ် အကြိမ် #${visit})`,
   },
 
   referReason: {

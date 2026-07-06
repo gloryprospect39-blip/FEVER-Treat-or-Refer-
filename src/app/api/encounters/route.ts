@@ -11,11 +11,7 @@ export async function POST(request: Request) {
       ctx: body.patient as PatientContext,
       assessment: body.assessment as FebrileAssessment,
       clinic: body.clinic as ClinicContext,
-      catchment: body.catchment ?? null,
       actionTaken: body.actionTaken ?? null,
-      registeredPatientId: body.registeredPatientId ?? null,
-      registeredName: body.registeredName ?? null,
-      registeredVillage: body.registeredVillage ?? null,
     });
     return NextResponse.json({ ok: true });
   } catch (error) {

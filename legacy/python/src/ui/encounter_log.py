@@ -28,22 +28,10 @@ def log_encounter(
     clinic: ClinicContext,
     action_taken: str | None = None,
     log_path: Path | None = None,
-    catchment: str | None = None,
-    registered_patient_id: str | None = None,
-    registered_name: str | None = None,
-    registered_village: str | None = None,
 ) -> Path:
     """Append one encounter row. Returns the log file path."""
     path = log_path or DEFAULT_LOG_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
-
-    registration: dict[str, Any] | None = None
-    if registered_patient_id:
-        registration = {
-            "id": registered_patient_id,
-            "name": registered_name,
-            "village": registered_village,
-        }
 
     row: dict[str, Any] = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -52,10 +40,6 @@ def log_encounter(
         "assessment": _serialize_assessment(assessment),
         "action_taken": action_taken,
     }
-    if catchment and catchment.strip():
-        row["catchment"] = catchment.strip()
-    if registration:
-        row["registration"] = registration
 
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, ensure_ascii=False) + "\n")

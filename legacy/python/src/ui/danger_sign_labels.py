@@ -1,10 +1,7 @@
 """Tile metadata for the point-of-care danger-sign grid.
 
-Each tile maps a human-facing checklist toggle onto the ``PatientContext`` model
-consumed by the decision engine. A tile either flips a ``DangerSigns`` boolean
-field (``danger_field``) or sets a ``ConsciousnessLevel`` (``consciousness``).
-Human labels are reused from ``DANGER_SIGN_LABELS`` so wording stays consistent
-with the engine's referral reasons.
+Pediatric and adult pathways show different tile sets; both map onto the same
+``PatientContext`` fields consumed by the decision engine.
 """
 
 from __future__ import annotations
@@ -13,6 +10,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 from decision_engine.models import DANGER_SIGN_LABELS, ConsciousnessLevel
+
+from ui.pathways import PATHWAY_ADULT, is_pediatric_pathway
 
 
 @dataclass(frozen=True)
@@ -24,7 +23,7 @@ class DangerSignTile:
     consciousness: Optional[ConsciousnessLevel] = None
 
 
-DANGER_SIGN_TILES: list[DangerSignTile] = [
+PEDIATRIC_DANGER_SIGN_TILES: list[DangerSignTile] = [
     DangerSignTile(
         trigger_code="imci:convulsions",
         icon="\u26a1",
@@ -81,7 +80,64 @@ DANGER_SIGN_TILES: list[DangerSignTile] = [
     ),
 ]
 
+ADULT_DANGER_SIGN_TILES: list[DangerSignTile] = [
+    DangerSignTile(
+        trigger_code="imci:convulsions",
+        icon="\u26a1",
+        label=DANGER_SIGN_LABELS["imci:convulsions"],
+        danger_field="convulsions",
+    ),
+    DangerSignTile(
+        trigger_code="imci:unable_to_drink_or_breastfeed",
+        icon="\u270b",
+        label=DANGER_SIGN_LABELS["imci:unable_to_drink_or_breastfeed"],
+        danger_field="unable_to_drink_or_breastfeed",
+    ),
+    DangerSignTile(
+        trigger_code="imci:vomits_everything",
+        icon="\U0001f92e",
+        label=DANGER_SIGN_LABELS["imci:vomits_everything"],
+        danger_field="vomits_everything",
+    ),
+    DangerSignTile(
+        trigger_code="imci:lethargic",
+        icon="\U0001f634",
+        label=DANGER_SIGN_LABELS["imci:lethargic"],
+        consciousness=ConsciousnessLevel.LETHARGIC,
+    ),
+    DangerSignTile(
+        trigger_code="imci:unconscious",
+        icon="\U0001f4a4",
+        label=DANGER_SIGN_LABELS["imci:unconscious"],
+        consciousness=ConsciousnessLevel.UNCONSCIOUS,
+    ),
+    DangerSignTile(
+        trigger_code="imci:stiff_neck",
+        icon="\U0001f9b4",
+        label=DANGER_SIGN_LABELS["imci:stiff_neck"],
+        danger_field="stiff_neck",
+    ),
+    DangerSignTile(
+        trigger_code="imci:severe_palmar_pallor",
+        icon="\U0001fa78",
+        label=DANGER_SIGN_LABELS["imci:severe_palmar_pallor"],
+        danger_field="severe_palmar_pallor",
+    ),
+]
 
-def danger_sign_tiles_for_band(_age_band: str) -> list[DangerSignTile]:
-    """Return danger-sign tiles — same nine IMCI tiles for every age band (ui.md)."""
-    return DANGER_SIGN_TILES
+# Backward-compatible alias (pediatric IMCI set).
+DANGER_SIGN_TILES = PEDIATRIC_DANGER_SIGN_TILES
+
+
+def danger_sign_tiles_for_pathway(pathway_label: str) -> list[DangerSignTile]:
+    """Pediatric vs adult grid — follows the Child/Adult pathway toggle."""
+    if pathway_label == PATHWAY_ADULT:
+        return list(ADULT_DANGER_SIGN_TILES)
+    return list(PEDIATRIC_DANGER_SIGN_TILES)
+
+
+def danger_sign_tiles_for_band(age_band: str) -> list[DangerSignTile]:
+    """Pediatric: full IMCI grid. Adult: excludes infant-specific signs."""
+    if is_pediatric_pathway(age_band):
+        return list(PEDIATRIC_DANGER_SIGN_TILES)
+    return list(ADULT_DANGER_SIGN_TILES)

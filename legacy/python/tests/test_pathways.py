@@ -4,7 +4,12 @@ import pytest
 
 from decision_engine.models import Comorbidity
 from ui.comorbidity_options import comorbidity_options_for_band, filter_comorbidities_for_band
-from ui.danger_sign_labels import DANGER_SIGN_TILES, danger_sign_tiles_for_band
+from ui.danger_sign_labels import (
+    ADULT_DANGER_SIGN_TILES,
+    PEDIATRIC_DANGER_SIGN_TILES,
+    danger_sign_tiles_for_band,
+    danger_sign_tiles_for_pathway,
+)
 from ui.pathways import ADULT_AGE_BANDS, PEDIATRIC_AGE_BANDS, is_adult_pathway, is_pediatric_pathway
 from ui.pathways import (
     PATHWAY_ADULT,
@@ -26,10 +31,34 @@ def test_adult_age_bands_use_adult_pathway(age_band: str):
     assert not is_pediatric_pathway(age_band)
 
 
-@pytest.mark.parametrize("age_band", sorted(PEDIATRIC_AGE_BANDS | ADULT_AGE_BANDS))
-def test_all_age_bands_show_nine_danger_sign_tiles(age_band: str):
-    assert len(danger_sign_tiles_for_band(age_band)) == 9
-    assert danger_sign_tiles_for_band(age_band) == DANGER_SIGN_TILES
+@pytest.mark.parametrize("age_band", sorted(PEDIATRIC_AGE_BANDS))
+def test_pediatric_age_bands_show_nine_danger_sign_tiles(age_band: str):
+    tiles = danger_sign_tiles_for_band(age_band)
+    assert len(tiles) == 9
+    assert tiles == PEDIATRIC_DANGER_SIGN_TILES
+
+
+@pytest.mark.parametrize("age_band", sorted(ADULT_AGE_BANDS))
+def test_adult_age_bands_show_seven_danger_sign_tiles(age_band: str):
+    tiles = danger_sign_tiles_for_band(age_band)
+    assert len(tiles) == 7
+    assert tiles == ADULT_DANGER_SIGN_TILES
+
+
+def test_adult_pathway_toggle_excludes_infant_danger_signs():
+    tiles = danger_sign_tiles_for_pathway(PATHWAY_ADULT)
+    codes = {tile.trigger_code for tile in tiles}
+    assert len(tiles) == 7
+    assert "imci:chest_indrawing" not in codes
+    assert "imci:bulging_fontanelle" not in codes
+
+
+def test_child_pathway_toggle_includes_infant_danger_signs():
+    tiles = danger_sign_tiles_for_pathway(PATHWAY_CHILD)
+    codes = {tile.trigger_code for tile in tiles}
+    assert len(tiles) == 9
+    assert "imci:chest_indrawing" in codes
+    assert "imci:bulging_fontanelle" in codes
 
 
 def test_pediatric_pathway_has_reduced_comorbidity_options():
