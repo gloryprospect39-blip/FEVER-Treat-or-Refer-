@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Noto_Sans_Myanmar } from "next/font/google";
 
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { mm } from "@/lib/i18n/mm";
 
 import "./globals.css";
@@ -25,6 +26,24 @@ const notoMyanmar = Noto_Sans_Myanmar({
 export const metadata: Metadata = {
   title: mm.app.metaTitle,
   description: mm.app.metaDescription,
+  applicationName: mm.app.title,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: mm.app.title,
+  },
+  icons: {
+    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icons/icon.svg" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d9488",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -39,6 +58,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-gradient-to-b from-slate-50 via-white to-teal-50/30 font-sans text-slate-900">
         {children}
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
