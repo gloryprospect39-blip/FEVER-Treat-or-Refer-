@@ -6,6 +6,7 @@ import streamlit as st
 
 from ui.encounter_log import count_encounters
 from ui.i18n.mm import mm
+from ui.streamlit_app.assistant import render_assistant
 from ui.streamlit_app.form import render_form
 from ui.streamlit_app.result import render_result
 from ui.streamlit_app.styles import GLOBAL_CSS
@@ -30,3 +31,6 @@ def run() -> None:
         render_result()
     else:
         render_form()
+
+    st.divider()
+    render_assistant()

@@ -46,6 +46,19 @@ legacy/python/      Original Streamlit app + pytest suite
 data/               Runtime DB + logs (gitignored)
 ```
 
+## AI assistant (Google AI Studio / Gemini)
+
+An optional in-app chat assistant answers clinical questions (danger signs, IMCI, supportive care, when to refer) with strong guardrails — it never overrides the triage decision and always reinforces referral when danger signs are present.
+
+Enable it by adding a [Google AI Studio](https://aistudio.google.com/app/apikey) key:
+
+```bash
+cp .env.example .env.local
+# then set GEMINI_API_KEY=... in .env.local
+```
+
+The key is used **server-side only** (`/api/assistant`) and is never exposed to the browser. Without a key, the app still works — the assistant simply reports it is not configured.
+
 ## API routes
 
 | Route | Method | Purpose |
@@ -53,6 +66,7 @@ data/               Runtime DB + logs (gitignored)
 | `/api/patients` | GET | List villages + recent patients |
 | `/api/patients/resolve` | POST | Register or record revisit |
 | `/api/encounters` | POST | Append encounter log row |
+| `/api/assistant` | POST | Gemini-backed clinical Q&A (needs `GEMINI_API_KEY`) |
 
 ## Output decisions
 
