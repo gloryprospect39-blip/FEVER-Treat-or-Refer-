@@ -188,9 +188,29 @@ def render_form() -> None:
         st.session_state["fg_show_vitals"] = not show_vitals
         st.rerun()
 
-    systolic_bp = spo2 = respiratory_rate = 0
+    systolic_bp = spo2 = respiratory_rate = heart_rate = 0
+    temperature = 0.0
     if show_vitals:
-        with section_block(mm.vitals.title):
+        with section_block(mm.vitals.title, mm.vitals.not_measured_help):
+            t1, t2 = st.columns(2)
+            with t1:
+                temperature = st.number_input(
+                    mm.vitals.temperature,
+                    min_value=0.0,
+                    max_value=45.0,
+                    value=0.0,
+                    step=0.1,
+                    format="%.1f",
+                    key="fg_temp",
+                )
+            with t2:
+                heart_rate = st.number_input(
+                    mm.vitals.heart_rate,
+                    min_value=0,
+                    max_value=300,
+                    value=0,
+                    key="fg_hr",
+                )
             v1, v2, v3 = st.columns(3)
             with v1:
                 systolic_bp = st.number_input(
@@ -255,6 +275,8 @@ def render_form() -> None:
                 systolic_bp=systolic_bp or None,
                 spo2_percent=spo2 or None,
                 respiratory_rate=respiratory_rate or None,
+                temperature_c=temperature or None,
+                heart_rate=heart_rate or None,
                 pathway=engine_pathway,
             )
             assessment = evaluate_febrile_patient(ctx)
@@ -265,5 +287,7 @@ def render_form() -> None:
             st.session_state["fg_treatment_plan"] = plan
             st.session_state["fg_show_result"] = True
             st.rerun()
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 — surface details for field debugging
             st.error(mm.assess_error)
+            with st.expander("Technical details"):
+                st.exception(exc)

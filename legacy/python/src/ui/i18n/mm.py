@@ -39,6 +39,9 @@ class VitalsStrings:
     systolic_bp: str
     spo2: str
     respiratory_rate: str
+    temperature: str
+    heart_rate: str
+    not_measured_help: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,6 +145,9 @@ mm = MmStrings(
         systolic_bp="ဆီစတိုလစ် သွေးဖိအား",
         spo2="SpO₂ %",
         respiratory_rate="အသက်ရှုနှုန်း /မိနစ်",
+        temperature="ကိုယ်အပူချိန် (°C)",
+        heart_rate="နှလုံးခုန်နှုန်း /မိနစ်",
+        not_measured_help="မတိုင်းတာရသေးပါက ဗလာထားပါ။",
     ),
     danger_signs=DangerSignStrings(
         pediatric_title="အန္တရာယ် လက္ခဏာများ (ကလေး)",
@@ -213,7 +219,7 @@ COMORBIDITY_LABELS_MM: dict[str, str] = {
     "hiv": "HIV",
     "immunosuppression": "ကိုယ်ခံအား အားနည်းခြင်း",
     "pregnancy": "ကိုယ်ဝန်ရှိခြင်း",
-    "recent_surgery_or_trauma": "မကြာသေးမီ ခွဲစိတ်ခြင်း သို့မဟုတ် ဒဏ်ရာ",
+    "recent_surgery_or_wound": "မကြာသေးမီ ခွဲစိတ်ခြင်း သို့မဟုတ် ဒဏ်ရာ",
 }
 
 SYSTEM_LABELS_MM: dict[str, str] = {
