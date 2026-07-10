@@ -103,6 +103,19 @@ class ClinicStrings:
 
 
 @dataclass(frozen=True, slots=True)
+class AssistantStrings:
+    title: str
+    subtitle: str
+    placeholder: str
+    thinking: str
+    disclaimer: str
+    unavailable: str
+    error: str
+    greeting: str
+    use_context: str
+
+
+@dataclass(frozen=True, slots=True)
 class MmStrings:
     app: AppStrings
     age: AgeStrings
@@ -113,6 +126,7 @@ class MmStrings:
     actions: ActionStrings
     result: ResultStrings
     clinic: ClinicStrings
+    assistant: AssistantStrings
     assess_error: str
     encounters_logged: str
 
@@ -193,6 +207,17 @@ mm = MmStrings(
         act_in_stock="ဌက်ဖျားဆေး ရှိသည်",
         amoxicillin="အမောက်ဆီလင်",
         paracetamol="ပါရာစီတမော ရှိသည်",
+    ),
+    assistant=AssistantStrings(
+        title="AI အကူအညီ",
+        subtitle="ဆေးဘက်ဆိုင်ရာ မေးခွန်းများ (အကြံပြုသာ)",
+        placeholder="မေးခွန်း ရိုက်ထည့်ပါ…",
+        thinking="စဉ်းစားနေသည်…",
+        disclaimer="AI ၏ အကြံပြုချက်များသည် ကိုးကားရန်သာဖြစ်ပြီး ဆရာဝန်၏ ဆုံးဖြတ်ချက်ကို အစားမထိုးပါ။",
+        unavailable="AI အကူအညီ ကို ဖွင့်ထားခြင်း မရှိသေးပါ (GEMINI_API_KEY သတ်မှတ်ပါ)။",
+        error="တောင်းဆိုမှု မအောင်မြင်ပါ။ ထပ်ကြိုးစားပါ။",
+        greeting="မင်္ဂလာပါ။ ဖျားနာမှု စစ်ဆေးခြင်း၊ အန္တရာယ်လက္ခဏာများ သို့မဟုတ် ကုသမှု အကြောင်း မေးမြန်းနိုင်ပါသည်။",
+        use_context="လက်ရှိလူနာ အချက်အလက်ဖြင့် မေးရန်",
     ),
     assess_error="ထည့်သွင်းမှု စစ်ဆေးပြီး ပြန်ကြိုးစားပါ။",
     encounters_logged="မှတ်တမ်းတင်ထားသော လူနာ",

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { ChatAssistant } from "@/components/ChatAssistant";
 import { SectionCard } from "@/components/SectionCard";
 import { ToggleChip } from "@/components/ToggleChip";
 import { evaluateFebrilePatient } from "@/lib/decision-engine";
@@ -197,7 +198,17 @@ export function TriageApp() {
         ? mm.result.monitorReason(assessment.monitoring_days)
         : treatmentPlan.summary;
 
+    const patientSummary = [
+      `Pathway: ${pathway}`,
+      `Age band: ${ageBand}`,
+      `Decision: ${assessment.decision}`,
+      `Urgency: ${assessment.urgency}`,
+      `Referral reasons: ${assessment.referral_reasons.join(", ") || "none"}`,
+      `Sepsis screen score: ${assessment.sepsis.score}`,
+    ].join("; ");
+
     return (
+      <>
       <div className="mx-auto max-w-xl space-y-5 px-4 py-8">
         <div
           className={`rounded-3xl bg-gradient-to-br ${style.bg} p-8 text-white shadow-xl shadow-slate-300/40`}
@@ -288,10 +299,13 @@ export function TriageApp() {
           </button>
         </div>
       </div>
+      <ChatAssistant patientSummary={patientSummary} />
+      </>
     );
   }
 
   return (
+    <>
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-8 pb-16">
       <header className="text-center">
         <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-lg">
@@ -566,5 +580,7 @@ export function TriageApp() {
         {mm.actions.assess}
       </button>
     </div>
+    <ChatAssistant />
+    </>
   );
 }
