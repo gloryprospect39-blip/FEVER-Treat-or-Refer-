@@ -28,10 +28,13 @@ def log_encounter(
     clinic: ClinicContext,
     action_taken: str | None = None,
     log_path: Path | None = None,
-) -> Path:
-    """Append one encounter row. Returns the log file path."""
+) -> Path | None:
+    """Append one encounter row.
+
+    Returns the log file path, or ``None`` if the filesystem is read-only /
+    unavailable (e.g. an ephemeral cloud host). Logging must never block triage.
+    """
     path = log_path or DEFAULT_LOG_PATH
-    path.parent.mkdir(parents=True, exist_ok=True)
 
     row: dict[str, Any] = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -41,8 +44,12 @@ def log_encounter(
         "action_taken": action_taken,
     }
 
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError:
+        return None
     return path
 
 

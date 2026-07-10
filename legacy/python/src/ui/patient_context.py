@@ -46,6 +46,8 @@ def build_patient_context(
     systolic_bp: int | None = None,
     spo2_percent: int | None = None,
     respiratory_rate: int | None = None,
+    temperature_c: float | None = None,
+    heart_rate: int | None = None,
     *,
     pathway: str | None = None,
 ) -> PatientContext:
@@ -74,14 +76,21 @@ def build_patient_context(
         age_band, comorbidities or []
     )
 
+    # A measured temperature is authoritative for fever when the worker recorded it.
+    resolved_fever = has_fever
+    if temperature_c is not None:
+        resolved_fever = temperature_c >= 38.0
+
     return PatientContext(
         age_months=AGE_BANDS[age_band],
-        has_fever=has_fever,
+        has_fever=resolved_fever,
         fever_duration_days=fever_duration_days,
         consciousness=consciousness,
         comorbidities=allowed_comorbidities,
         danger_signs=DangerSigns(**danger_kwargs),
         vitals=VitalSigns(
+            temperature_c=temperature_c,
+            heart_rate=heart_rate,
             systolic_bp=systolic_bp,
             spo2_percent=spo2_percent,
             respiratory_rate=respiratory_rate,
