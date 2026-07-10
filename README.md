@@ -23,6 +23,22 @@ npm run build   # production build
 npm start       # production server
 ```
 
+## Install as an app (PWA — mobile & Windows)
+
+FeverGate is a Progressive Web App, so it installs like a native app on phones and Windows — with an app icon, standalone window, and offline support for the triage flow (the AI assistant still needs a connection).
+
+Install requires a production build served over HTTPS (or `localhost`):
+
+```bash
+npm run build && npm start
+```
+
+- **Android (Chrome):** menu → **Add to Home screen / Install app**
+- **iOS (Safari):** Share → **Add to Home Screen**
+- **Windows (Edge/Chrome):** click the **Install** icon in the address bar (or menu → **Apps → Install this site as an app**)
+
+The service worker (`public/sw.js`) caches the app shell; the manifest lives at `/manifest.webmanifest` (generated from `src/app/manifest.ts`). Registration only runs in production builds.
+
 ## Clinical basis (screening only)
 
 - **Under 5:** WHO IMCI danger signs
