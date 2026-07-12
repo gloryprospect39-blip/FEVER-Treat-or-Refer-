@@ -191,7 +191,7 @@ export const mm = {
     weakPulse: "သွေးခုန်နှုန်း အားနည်း သို့မဟုတ် မရှိ",
     elevatedQsofa: "qSOFA မြင့်မားခြင်း",
     elevatedNews2: "NEWS2 မြင့်မားခြင်း",
-    elevatedSepsisScreen: "ပြင်းထန်သော ရောဂါ စစ်ဆေးမှု မြင့်မား",
+    elevatedSepsisScreen: "ဖျားနာရောဂါ ပြင်းထန်မှု",
     elevatedSevereIllness: "ပြင်းထန်သော ရောဂါ လက္ခဏာ မြင့်မား",
     referImmediately: "ချက်ချင်း ပို့ဆောင်ရန်",
     referSameDay: "ယနေ့ပို့ဆောင်ရန်",
@@ -209,7 +209,7 @@ export const mm = {
     giveAct: (dose: string) => `ယူဆ ဌက်ဖျားဆေး ပေးရန်: ${dose}။`,
     actDetail: (dose: string, feverSupport: string) =>
       `ဌက်ဖျားရောဂါ ဖြစ်ပွားမှု များသောဒေသတွင် ရိုးရှင်းသော ဖျား — ယခု ${dose} စတင်ပါ။${feverSupport} အမြန်စစ်ဆေးမှု မလိုပါ။`,
-    paracetamolForFever: " ဖျားရန် ပါရာစီတမောൾ ပေးပါ။",
+    paracetamolForFever: " ဖျားရန် ပါရာစီတမောပေးပါ။",
     recheckInDays: (days: number) =>
       ` ဤလူနာကို ${days} ရက်အကြာတွင် ပြန်စစ်ဆေးရန်။`,
     giveParacetamol: "ဖျားရန် ပါရာစီတမောൾ ပေးရန်",
@@ -227,11 +227,11 @@ export const mm = {
     supportiveGeneralDetail:
       "အန္တရာယ်နည်း — အနားယူရန်၊ ရေဓာတ်ပြည့်ဝရန်။ အန္တရာယ်လက္ခဏာ ပေါ်ပါက ပြန်လာရန် အကြံပြုပါ။",
     actDoseUnder5:
-      "ကိုယ်အလေးချိန် အလိုက် ဌက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် နိုင်ငံတော် ပရိုတိုကော",
+      "ကိုယ်အလေးချိန် အလိုက် ဌက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် ပုံမှန်အားဖြင့် ပရိုတိုကောအတိုင်း",
     actDoseChild:
-      "ကိုယ်အလေးချိန် အလိုက် ဌက်ဖျားဆေး (artemether-lumefantrine) — ကလေး နိုင်ငံတော် ပရိုတိုကော",
+      "ကိုယ်အလေးချိန် အလိုက် ဌက်ဖျားဆေး (artemether-lumefantrine) — ကလေး ပုံမှန်အားဖြင့် ပရိုတိုကောအတိုင်း",
     actDoseAdult:
-      "လူကြီး ဌက်ဖျားဆေး (artemether-lumefantrine) — နိုင်ငံတော် ပရိုတိုကော",
+      "လူကြီး ဌက်ဖျားဆေး (artemether-lumefantrine) — ပုံမှန်အားဖြင့် ပရိုတိုကောအတိုင်း",
     teleconsultScheduled: (days: number, phone: string) =>
       `${days} ရက် ပြန်လာချိန် တယ်လီ အကြံပြု စီစဉ်ပြီး။ အခြေအနေ ဆိုးပါက ${phone} သို့ ခေါ်ဆိုပါ။`,
   },
