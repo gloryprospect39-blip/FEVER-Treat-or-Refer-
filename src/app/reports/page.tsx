@@ -83,8 +83,8 @@ function SummaryBlock({
   );
 }
 
-export default function ReportsPage() {
-  const rows = loadEncounters();
+export default async function ReportsPage() {
+  const rows = await loadEncounters();
   const now = new Date();
   const dailySummary = summarizeEncounters(filterSince(rows, startOfToday(now)));
   const weeklySummary = summarizeEncounters(filterSince(rows, startOfWeek(now)));
