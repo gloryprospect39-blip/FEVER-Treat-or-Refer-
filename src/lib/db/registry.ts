@@ -3,7 +3,8 @@ import "server-only";
 import Database from "better-sqlite3";
 import { randomUUID } from "crypto";
 import path from "path";
-import fs from "fs";
+
+import { dataDir } from "./data-dir";
 
 export interface RegisteredPatient {
   id: string;
@@ -15,24 +16,31 @@ export interface RegisteredPatient {
   display_label: string;
 }
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH = path.join(DATA_DIR, "fevergate.db");
+// undefined = not yet attempted, null = unavailable (e.g. read-only serverless FS)
+let cachedDb: Database.Database | null | undefined;
 
-function ensureDb(): Database.Database {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  const db = new Database(DB_PATH);
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS patients (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      village TEXT NOT NULL,
-      created_at TEXT NOT NULL,
-      last_seen_at TEXT NOT NULL,
-      visit_count INTEGER NOT NULL DEFAULT 1
-    );
-    CREATE INDEX IF NOT EXISTS idx_patients_last_seen ON patients (last_seen_at DESC);
-  `);
-  return db;
+function getDb(): Database.Database | null {
+  if (cachedDb !== undefined) return cachedDb;
+  try {
+    const db = new Database(path.join(dataDir(), "fevergate.db"));
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS patients (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        village TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        last_seen_at TEXT NOT NULL,
+        visit_count INTEGER NOT NULL DEFAULT 1
+      );
+      CREATE INDEX IF NOT EXISTS idx_patients_last_seen ON patients (last_seen_at DESC);
+    `);
+    cachedDb = db;
+  } catch {
+    // Storage unavailable — the patient registry degrades to a no-op so the
+    // app keeps serving instead of returning 500s.
+    cachedDb = null;
+  }
+  return cachedDb;
 }
 
 function normalize(value: string): string {
@@ -54,7 +62,8 @@ function rowToPatient(row: {
 }
 
 export function listVillages(): string[] {
-  const db = ensureDb();
+  const db = getDb();
+  if (!db) return [];
   const rows = db
     .prepare(
       "SELECT DISTINCT village FROM patients ORDER BY village COLLATE NOCASE",
@@ -67,7 +76,8 @@ export function listRecentPatients(
   limit = 30,
   village?: string | null,
 ): RegisteredPatient[] {
-  const db = ensureDb();
+  const db = getDb();
+  if (!db) return [];
   const rows = village
     ? (db
         .prepare(
@@ -89,7 +99,8 @@ export function findPatient(
   const nName = normalize(name);
   const nVillage = normalize(village);
   if (!nName || !nVillage) return null;
-  const db = ensureDb();
+  const db = getDb();
+  if (!db) return null;
   const row = db
     .prepare(
       "SELECT * FROM patients WHERE lower(name) = lower(?) AND lower(village) = lower(?)",
@@ -99,7 +110,8 @@ export function findPatient(
 }
 
 export function recordVisit(patientId: string): RegisteredPatient {
-  const db = ensureDb();
+  const db = getDb();
+  if (!db) throw new Error("patient registry storage is unavailable");
   const now = new Date().toISOString();
   db.prepare(
     "UPDATE patients SET last_seen_at = ?, visit_count = visit_count + 1 WHERE id = ?",
@@ -123,7 +135,8 @@ export function registerPatient(
   const existing = findPatient(nName, nVillage);
   if (existing) return recordVisit(existing.id);
 
-  const db = ensureDb();
+  const db = getDb();
+  if (!db) throw new Error("patient registry storage is unavailable");
   const now = new Date().toISOString();
   const id = randomUUID();
   db.prepare(
@@ -144,6 +157,7 @@ export function resolvePatientForEncounter(input: {
   village: string;
   patientId?: string | null;
 }): RegisteredPatient | null {
+  if (!getDb()) return null;
   if (input.patientId) return recordVisit(input.patientId);
   const nName = normalize(input.name);
   const nVillage = normalize(input.village);

@@ -12,6 +12,9 @@ export async function POST(request: Request) {
       assessment: body.assessment as FebrileAssessment,
       clinic: body.clinic as ClinicContext,
       actionTaken: body.actionTaken ?? null,
+      patientName: body.patientName ?? null,
+      village: body.village ?? null,
+      clinician: body.clinician ?? null,
     });
     return NextResponse.json({ ok: true });
   } catch (error) {
