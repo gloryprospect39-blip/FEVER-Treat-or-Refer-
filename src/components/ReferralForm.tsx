@@ -3,6 +3,7 @@
 import { Printer, X } from "lucide-react";
 
 import { mm } from "@/lib/i18n/mm";
+import { toSentences } from "@/lib/utils";
 
 export interface ReferralData {
   patientName: string;
@@ -160,7 +161,11 @@ export function ReferralForm({
           <p className="mt-1 text-sm font-semibold text-slate-900">
             {data.planSummary}
           </p>
-          <p className="mt-1 text-sm text-slate-700">{data.planDetail}</p>
+          <div className="mt-1 space-y-1 text-sm text-slate-700">
+            {toSentences(data.planDetail).map((sentence, i) => (
+              <p key={i}>{sentence}</p>
+            ))}
+          </div>
 
           {data.isRefer && (
             <p className="mt-3 text-sm text-slate-700">

@@ -46,6 +46,7 @@ import {
   type TreatmentPlan,
 } from "@/lib/fevergate/treatment-plan";
 import { mm } from "@/lib/i18n/mm";
+import { toSentences } from "@/lib/utils";
 
 interface SessionResult {
   assessment: FebrileAssessment;
@@ -250,12 +251,16 @@ export function TriageApp() {
           <h1 className="mt-1 text-4xl font-extrabold tracking-tight">
             {style.label}
           </h1>
-          <p className={`mt-3 text-lg font-medium ${style.reasonClass}`}>
-            {reason}
-          </p>
-          <p className="mt-4 text-base leading-relaxed opacity-95">
-            {treatmentPlan.detail}
-          </p>
+          <div className={`mt-3 space-y-1 text-lg font-medium ${style.reasonClass}`}>
+            {toSentences(reason).map((sentence, i) => (
+              <p key={i}>{sentence}</p>
+            ))}
+          </div>
+          <div className="mt-4 space-y-1.5 text-base leading-relaxed opacity-95">
+            {toSentences(treatmentPlan.detail).map((sentence, i) => (
+              <p key={i}>{sentence}</p>
+            ))}
+          </div>
         </div>
 
         {actionNote && (
