@@ -3,7 +3,7 @@ import type {
   PatientContext,
   ReferralUrgency,
 } from "@/lib/decision-engine/models";
-import { dangerSignLabelsMm, mm } from "@/lib/i18n/mm";
+import { dangerSignLabelMm, dangerSignLabelsMm, mm } from "@/lib/i18n/mm";
 
 const EXTRA: Record<string, string> = {
   neonate_fever: dangerSignLabelsMm.neonate_fever,
@@ -24,11 +24,12 @@ export function urgencyPhrase(urgency: ReferralUrgency): string {
 export function buildReferReason(
   referralReasons: string[],
   urgency: ReferralUrgency,
+  pathway?: string,
 ): string {
   const named: string[] = [];
   for (const code of referralReasons) {
     if (code === "convulsions") continue;
-    let label = dangerSignLabelsMm[code] ?? EXTRA[code];
+    let label = dangerSignLabelMm(code, pathway) ?? EXTRA[code];
     if (!label && code.startsWith("news2>=")) label = mm.referReason.elevatedNews2;
     if (label && !named.includes(label)) named.push(label);
   }

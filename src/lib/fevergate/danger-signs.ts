@@ -74,7 +74,7 @@ export const PEDIATRIC_DANGER_SIGN_TILES: DangerSignTile[] = [
   {
     triggerCode: "imci:unable_to_drink_or_breastfeed",
     icon: Droplets,
-    label: mm.dangerSigns.unableToDrink,
+    label: mm.dangerSigns.unableToDrinkPediatric,
     dangerField: "unable_to_drink_or_breastfeed",
   },
 ];
@@ -120,7 +120,7 @@ export const ADULT_DANGER_SIGN_TILES: DangerSignTile[] = [
   {
     triggerCode: "imci:unable_to_drink_or_breastfeed",
     icon: Droplets,
-    label: mm.dangerSigns.unableToDrink,
+    label: mm.dangerSigns.unableToDrinkAdult,
     dangerField: "unable_to_drink_or_breastfeed",
   },
 ];

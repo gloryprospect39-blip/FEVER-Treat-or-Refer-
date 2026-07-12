@@ -210,7 +210,7 @@ export function TriageApp() {
       assessment.decision === "REFER_IMMEDIATE";
 
     const reason = isRefer
-      ? buildReferReason(assessment.referral_reasons, assessment.urgency)
+      ? buildReferReason(assessment.referral_reasons, assessment.urgency, pathway)
       : assessment.decision === "TREAT_AND_MONITOR"
         ? mm.result.monitorReason(assessment.monitoring_days)
         : treatmentPlan.summary;

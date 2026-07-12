@@ -72,7 +72,8 @@ export const mm = {
     unconscious: "သတိမေ့လျော့ခြင်း",
     stiffNeck: "လည်ပင်းကြွက်သားတောင့်တင်းနေခြင်း",
     severePallor: "ခြေဖဝါး လက်ဖဝါး ဖြူဆုတ်နေခြင်း",
-    unableToDrink: "နို့မစို့ သို့မဟုတ် အစာမစားဝင်ခြင်း",
+    unableToDrinkPediatric: "နို့မစို့ ခြင်း",
+    unableToDrinkAdult: "အစာမစားဝင်ခြင်း",
     lethargic: "နုန်းချိနေခြင်း",
     chestIndrawing: "အသက်ရှူလျှင် ရင်ဘတ်ချိုင့်ဝင်နေခြင်း",
     bulgingFontanelle: "ငယ်ထိပ်ဖောင်းနေခြင်း",
@@ -239,7 +240,6 @@ export const mm = {
 
 /** IMCI danger-sign codes → Myanmar labels (for referral reason lines) */
 export const dangerSignLabelsMm: Record<string, string> = {
-  "imci:unable_to_drink_or_breastfeed": mm.dangerSigns.unableToDrink,
   "imci:vomits_everything": mm.dangerSigns.vomitsEverything,
   "imci:convulsions": mm.dangerSigns.convulsions,
   "imci:lethargic": mm.dangerSigns.lethargic,
@@ -250,3 +250,16 @@ export const dangerSignLabelsMm: Record<string, string> = {
   "imci:severe_palmar_pallor": mm.dangerSigns.severePallor,
   neonate_fever: mm.dangerSigns.neonateFever,
 };
+
+/** Pathway-aware label for danger signs whose wording differs by child/adult. */
+export function dangerSignLabelMm(
+  code: string,
+  pathway?: string,
+): string | undefined {
+  if (code === "imci:unable_to_drink_or_breastfeed") {
+    return pathway === mm.age.pathwayAdult
+      ? mm.dangerSigns.unableToDrinkAdult
+      : mm.dangerSigns.unableToDrinkPediatric;
+  }
+  return dangerSignLabelsMm[code];
+}
