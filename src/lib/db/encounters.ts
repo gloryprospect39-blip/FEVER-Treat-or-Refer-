@@ -5,9 +5,9 @@ import path from "path";
 
 import type { FebrileAssessment, PatientContext } from "@/lib/decision-engine/models";
 import type { ClinicContext } from "@/lib/fevergate/treatment-plan";
+import { dataDir } from "./data-dir";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const LOG_PATH = path.join(DATA_DIR, "encounters.jsonl");
+const logPath = () => path.join(dataDir(), "encounters.jsonl");
 
 export interface EncounterRow {
   timestamp: string;
@@ -15,6 +15,9 @@ export interface EncounterRow {
   clinic: ClinicContext;
   assessment: FebrileAssessment;
   action_taken: string | null;
+  patient_name?: string | null;
+  village?: string | null;
+  clinician?: string | null;
 }
 
 export function logEncounter(input: {
@@ -22,25 +25,40 @@ export function logEncounter(input: {
   assessment: FebrileAssessment;
   clinic: ClinicContext;
   actionTaken?: string | null;
+  patientName?: string | null;
+  village?: string | null;
+  clinician?: string | null;
 }): void {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-
   const row: EncounterRow = {
     timestamp: new Date().toISOString(),
     patient: input.ctx,
     clinic: input.clinic,
     assessment: input.assessment,
     action_taken: input.actionTaken ?? null,
+    patient_name: input.patientName ?? null,
+    village: input.village ?? null,
+    clinician: input.clinician ?? null,
   };
 
-  fs.appendFileSync(LOG_PATH, JSON.stringify(row) + "\n", "utf-8");
+  // Best-effort: logging must never break the triage flow, even on a
+  // read-only serverless filesystem.
+  try {
+    fs.appendFileSync(logPath(), JSON.stringify(row) + "\n", "utf-8");
+  } catch {
+    // Storage unavailable — skip persistence.
+  }
 }
 
 export function loadEncounters(): EncounterRow[] {
-  if (!fs.existsSync(LOG_PATH)) return [];
-  return fs
-    .readFileSync(LOG_PATH, "utf-8")
-    .split("\n")
-    .filter((line) => line.trim())
-    .map((line) => JSON.parse(line) as EncounterRow);
+  try {
+    const file = logPath();
+    if (!fs.existsSync(file)) return [];
+    return fs
+      .readFileSync(file, "utf-8")
+      .split("\n")
+      .filter((line) => line.trim())
+      .map((line) => JSON.parse(line) as EncounterRow);
+  } catch {
+    return [];
+  }
 }

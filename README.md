@@ -25,7 +25,7 @@ npm start       # production server
 
 ## Install as an app (PWA — mobile & Windows)
 
-FeverGate is a Progressive Web App, so it installs like a native app on phones and Windows — with an app icon, standalone window, and offline support for the triage flow (the AI assistant still needs a connection).
+FeverGate is a Progressive Web App, so it installs like a native app on phones and Windows — with an app icon, standalone window, and offline support for the triage flow.
 
 Install requires a production build served over HTTPS (or `localhost`):
 
@@ -38,6 +38,28 @@ npm run build && npm start
 - **Windows (Edge/Chrome):** click the **Install** icon in the address bar (or menu → **Apps → Install this site as an app**)
 
 The service worker (`public/sw.js`) caches the app shell; the manifest lives at `/manifest.webmanifest` (generated from `src/app/manifest.ts`). Registration only runs in production builds.
+
+## Deploy & share (public link)
+
+To share FeverGate with others you need to host it — `localhost` only works on your own machine. Two good options:
+
+### Option A — Vercel (fastest, free, best for a shareable link)
+
+1. Push this repo to GitHub (already done).
+2. Go to [vercel.com](https://vercel.com) → **Add New… → Project** → import this repo.
+3. **Deploy** → you get a link like `https://fevergate.vercel.app` (attach a custom domain later if you like).
+
+Because it's a PWA served over HTTPS, users can open the link on a phone and **Add to Home Screen** to install it. Sharing a **QR code** of the link is the easiest way to distribute it in the field — people scan and install.
+
+> **Storage note:** Vercel's filesystem is read-only/ephemeral, so the SQLite patient registry and JSONL encounter log **won't persist** there — the app detects this and degrades gracefully (triage works fully; logging is skipped). If you need those records to persist, use Option B or move storage to a hosted database.
+
+### Option B — Persistent host (Render / Railway / Fly.io)
+
+These run a real Node server with a writable disk, so the local SQLite registry and encounter log persist with **no code changes**:
+
+- Build command: `npm run build`
+- Start command: `npm start`
+- (Optional) point `FEVERGATE_DATA_DIR` at a mounted persistent volume.
 
 ## Clinical basis (screening only)
 
@@ -62,18 +84,12 @@ legacy/python/      Original Streamlit app + pytest suite
 data/               Runtime DB + logs (gitignored)
 ```
 
-## AI assistant (Google AI Studio / Gemini)
+## Reports & referral form
 
-An optional in-app chat assistant answers clinical questions (danger signs, IMCI, supportive care, when to refer) with strong guardrails — it never overrides the triage decision and always reinforces referral when danger signs are present.
+- **Individual patient report / referral form** — after each assessment, tap **ပို့ဆောင်ရေး ဖောင် / မှတ်တမ်း** to open a clean, printable document with the patient details, clinical findings (fever, vitals, danger signs, comorbidities), the triage decision, referral reasons, treatment plan, and a signature line. Use the browser's print dialog to print or **Save as PDF**.
+- **Daily & weekly reports** — the **အစီရင်ခံစာများ** link (`/reports`) aggregates logged encounters into a today (daily) and rolling 7-day (weekly) summary — totals, referrals, decision breakdown, and child vs. adult counts — plus a recent-patients table. Also printable / exportable to PDF.
 
-Enable it by adding a [Google AI Studio](https://aistudio.google.com/app/apikey) key:
-
-```bash
-cp .env.example .env.local
-# then set GEMINI_API_KEY=... in .env.local
-```
-
-The key is used **server-side only** (`/api/assistant`) and is never exposed to the browser. Without a key, the app still works — the assistant simply reports it is not configured.
+Reports read from the encounter log (`data/encounters.jsonl`). Optional patient name, village, and health-worker fields on the triage form flow into both the referral form and the reports.
 
 ## API routes
 
@@ -82,7 +98,6 @@ The key is used **server-side only** (`/api/assistant`) and is never exposed to 
 | `/api/patients` | GET | List villages + recent patients |
 | `/api/patients/resolve` | POST | Register or record revisit |
 | `/api/encounters` | POST | Append encounter log row |
-| `/api/assistant` | POST | Gemini-backed clinical Q&A (needs `GEMINI_API_KEY`) |
 
 ## Output decisions
 

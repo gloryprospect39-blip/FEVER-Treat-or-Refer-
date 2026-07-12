@@ -19,3 +19,4 @@ node_modules/
 out/
 npm-debug.log*
 web-temp/
+*.tsbuildinfo

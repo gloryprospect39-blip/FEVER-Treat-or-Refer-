@@ -2,15 +2,19 @@
 
 import {
   ArrowLeft,
+  BarChart3,
   Calendar,
+  FileText,
   Phone,
   Stethoscope,
   Thermometer,
+  User,
   UserPlus,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { ChatAssistant } from "@/components/ChatAssistant";
+import { ReferralForm, type ReferralData } from "@/components/ReferralForm";
 import { SectionCard } from "@/components/SectionCard";
 import { ToggleChip } from "@/components/ToggleChip";
 import { evaluateFebrilePatient } from "@/lib/decision-engine";
@@ -32,11 +36,12 @@ import {
   defaultAgeBandIndex,
   isPediatricPathway,
 } from "@/lib/fevergate/pathways";
-import { buildReferReason } from "@/lib/fevergate/treatment-plan";
+import { buildReferReason, urgencyPhrase } from "@/lib/fevergate/treatment-plan";
 import {
   buildTreatmentPlan,
   scheduleTeleconsultationNote,
   teleconsultationDialUrl,
+  TELECONSULTATION_NUMBER,
   type ClinicContext,
   type TreatmentPlan,
 } from "@/lib/fevergate/treatment-plan";
@@ -79,6 +84,11 @@ export function TriageApp() {
   const [result, setResult] = useState<SessionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string | null>(null);
+  const [showReferral, setShowReferral] = useState(false);
+
+  const [patientName, setPatientName] = useState("");
+  const [village, setVillage] = useState("");
+  const [clinicianName, setClinicianName] = useState("");
 
   const [pathway, setPathway] = useState<string>(PATHWAY_CHILD);
   const [ageBand, setAgeBand] = useState<string>(
@@ -139,6 +149,9 @@ export function TriageApp() {
         assessment: session.assessment,
         clinic: session.clinic,
         actionTaken,
+        patientName: patientName.trim() || null,
+        village: village.trim() || null,
+        clinician: clinicianName.trim() || null,
       }),
     });
   };
@@ -176,8 +189,11 @@ export function TriageApp() {
   const resetForm = () => {
     setResult(null);
     setActionNote(null);
+    setShowReferral(false);
     setDangerTiles({});
     setComorbidities([]);
+    setPatientName("");
+    setVillage("");
   };
 
   const handleNewPatient = async (action: string) => {
@@ -198,14 +214,29 @@ export function TriageApp() {
         ? mm.result.monitorReason(assessment.monitoring_days)
         : treatmentPlan.summary;
 
-    const patientSummary = [
-      `Pathway: ${pathway}`,
-      `Age band: ${ageBand}`,
-      `Decision: ${assessment.decision}`,
-      `Urgency: ${assessment.urgency}`,
-      `Referral reasons: ${assessment.referral_reasons.join(", ") || "none"}`,
-      `Sepsis screen score: ${assessment.sepsis.score}`,
-    ].join("; ");
+    const referralData: ReferralData = {
+      patientName: patientName.trim() || mm.patient.unnamed,
+      village: village.trim(),
+      clinician: clinicianName.trim(),
+      ageBand,
+      pathwayLabel: pathway,
+      hasFever,
+      feverDays,
+      vitals: { systolicBp, spo2, respiratoryRate },
+      dangerSignLabels: dangerSignTilesForPathway(pathway)
+        .filter((t) => dangerTiles[t.triggerCode])
+        .map((t) => t.label),
+      comorbidityLabels: comorbidityOptionsForBand(ageBand)
+        .filter((o) => comorbidities.includes(o.comorbidity))
+        .map((o) => o.label),
+      decisionLabel: style.label,
+      urgencyText: urgencyPhrase(assessment.urgency),
+      reason,
+      planSummary: treatmentPlan.summary,
+      planDetail: treatmentPlan.detail,
+      isRefer,
+      teleconsultNumber: TELECONSULTATION_NUMBER,
+    };
 
     return (
       <>
@@ -283,6 +314,15 @@ export function TriageApp() {
 
           <button
             type="button"
+            onClick={() => setShowReferral(true)}
+            className="flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-6 py-3 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+          >
+            <FileText className="h-4 w-4" />
+            {mm.referral.button}
+          </button>
+
+          <button
+            type="button"
             onClick={() =>
               handleNewPatient(
                 isRefer
@@ -299,7 +339,12 @@ export function TriageApp() {
           </button>
         </div>
       </div>
-      <ChatAssistant patientSummary={patientSummary} />
+      {showReferral && (
+        <ReferralForm
+          data={referralData}
+          onClose={() => setShowReferral(false)}
+        />
+      )}
       </>
     );
   }
@@ -315,7 +360,49 @@ export function TriageApp() {
           {mm.app.title}
         </h1>
         <p className="mt-1 text-slate-500">{mm.app.tagline}</p>
+        <Link
+          href="/reports"
+          className="mt-3 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-1.5 text-sm font-medium text-teal-700 shadow-sm transition hover:bg-teal-50"
+        >
+          <BarChart3 className="h-4 w-4" />
+          {mm.nav.reports}
+        </Link>
       </header>
+
+      <SectionCard title={mm.patient.title} icon={<User className="h-5 w-5" />}>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className="block">
+            <span className="text-xs text-slate-500">{mm.patient.name}</span>
+            <input
+              type="text"
+              value={patientName}
+              onChange={(e) => setPatientName(e.target.value)}
+              placeholder={mm.patient.namePlaceholder}
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-slate-500">{mm.patient.village}</span>
+            <input
+              type="text"
+              value={village}
+              onChange={(e) => setVillage(e.target.value)}
+              placeholder={mm.patient.villagePlaceholder}
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-slate-500">{mm.patient.clinician}</span>
+            <input
+              type="text"
+              value={clinicianName}
+              onChange={(e) => setClinicianName(e.target.value)}
+              placeholder={mm.patient.clinicianPlaceholder}
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+      </SectionCard>
 
       <SectionCard
         title={mm.clinic.title}
@@ -580,7 +667,6 @@ export function TriageApp() {
         {mm.actions.assess}
       </button>
     </div>
-    <ChatAssistant />
     </>
   );
 }
