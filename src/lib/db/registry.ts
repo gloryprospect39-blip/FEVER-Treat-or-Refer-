@@ -1,10 +1,8 @@
 import "server-only";
 
-import Database from "better-sqlite3";
 import { randomUUID } from "crypto";
-import path from "path";
 
-import { dataDir } from "./data-dir";
+import { getSql } from "./client";
 
 export interface RegisteredPatient {
   id: string;
@@ -16,148 +14,119 @@ export interface RegisteredPatient {
   display_label: string;
 }
 
-// undefined = not yet attempted, null = unavailable (e.g. read-only serverless FS)
-let cachedDb: Database.Database | null | undefined;
-
-function getDb(): Database.Database | null {
-  if (cachedDb !== undefined) return cachedDb;
-  try {
-    const db = new Database(path.join(dataDir(), "fevergate.db"));
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS patients (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        village TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        last_seen_at TEXT NOT NULL,
-        visit_count INTEGER NOT NULL DEFAULT 1
-      );
-      CREATE INDEX IF NOT EXISTS idx_patients_last_seen ON patients (last_seen_at DESC);
-    `);
-    cachedDb = db;
-  } catch {
-    // Storage unavailable — the patient registry degrades to a no-op so the
-    // app keeps serving instead of returning 500s.
-    cachedDb = null;
-  }
-  return cachedDb;
-}
-
-function normalize(value: string): string {
-  return value.trim().replace(/\s+/g, " ");
-}
-
-function rowToPatient(row: {
+interface PatientRow {
   id: string;
   name: string;
   village: string;
   created_at: string;
   last_seen_at: string;
   visit_count: number;
-}): RegisteredPatient {
+}
+
+function normalize(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function rowToPatient(row: PatientRow): RegisteredPatient {
   return {
     ...row,
+    visit_count: Number(row.visit_count),
     display_label: `${row.name} · ${row.village}`,
   };
 }
 
-export function listVillages(): string[] {
-  const db = getDb();
-  if (!db) return [];
-  const rows = db
-    .prepare(
-      "SELECT DISTINCT village FROM patients ORDER BY village COLLATE NOCASE",
-    )
-    .all() as { village: string }[];
+export async function listVillages(): Promise<string[]> {
+  const sql = await getSql();
+  if (!sql) return [];
+  const rows = (await sql`
+    SELECT DISTINCT village FROM patients ORDER BY village
+  `) as { village: string }[];
   return rows.map((r) => r.village);
 }
 
-export function listRecentPatients(
+export async function listRecentPatients(
   limit = 30,
   village?: string | null,
-): RegisteredPatient[] {
-  const db = getDb();
-  if (!db) return [];
-  const rows = village
-    ? (db
-        .prepare(
-          "SELECT * FROM patients WHERE village = ? ORDER BY last_seen_at DESC LIMIT ?",
-        )
-        .all(village, limit) as RegisteredPatient[])
-    : (db
-        .prepare(
-          "SELECT * FROM patients ORDER BY last_seen_at DESC LIMIT ?",
-        )
-        .all(limit) as RegisteredPatient[]);
+): Promise<RegisteredPatient[]> {
+  const sql = await getSql();
+  if (!sql) return [];
+  const rows = (
+    village
+      ? await sql`
+          SELECT id, name, village, created_at::text, last_seen_at::text, visit_count
+          FROM patients WHERE village = ${village}
+          ORDER BY last_seen_at DESC LIMIT ${limit}
+        `
+      : await sql`
+          SELECT id, name, village, created_at::text, last_seen_at::text, visit_count
+          FROM patients
+          ORDER BY last_seen_at DESC LIMIT ${limit}
+        `
+  ) as PatientRow[];
   return rows.map(rowToPatient);
 }
 
-export function findPatient(
+export async function findPatient(
   name: string,
   village: string,
-): RegisteredPatient | null {
+): Promise<RegisteredPatient | null> {
   const nName = normalize(name);
   const nVillage = normalize(village);
   if (!nName || !nVillage) return null;
-  const db = getDb();
-  if (!db) return null;
-  const row = db
-    .prepare(
-      "SELECT * FROM patients WHERE lower(name) = lower(?) AND lower(village) = lower(?)",
-    )
-    .get(nName, nVillage) as RegisteredPatient | undefined;
-  return row ? rowToPatient(row) : null;
+  const sql = await getSql();
+  if (!sql) return null;
+  const rows = (await sql`
+    SELECT id, name, village, created_at::text, last_seen_at::text, visit_count
+    FROM patients
+    WHERE lower(name) = lower(${nName}) AND lower(village) = lower(${nVillage})
+    LIMIT 1
+  `) as PatientRow[];
+  return rows[0] ? rowToPatient(rows[0]) : null;
 }
 
-export function recordVisit(patientId: string): RegisteredPatient {
-  const db = getDb();
-  if (!db) throw new Error("patient registry storage is unavailable");
-  const now = new Date().toISOString();
-  db.prepare(
-    "UPDATE patients SET last_seen_at = ?, visit_count = visit_count + 1 WHERE id = ?",
-  ).run(now, patientId);
-  const row = db
-    .prepare("SELECT * FROM patients WHERE id = ?")
-    .get(patientId) as RegisteredPatient;
-  if (!row) throw new Error(`unknown patient id: ${patientId}`);
-  return rowToPatient(row);
+export async function recordVisit(patientId: string): Promise<RegisteredPatient> {
+  const sql = await getSql();
+  if (!sql) throw new Error("patient registry storage is unavailable");
+  const rows = (await sql`
+    UPDATE patients
+    SET last_seen_at = now(), visit_count = visit_count + 1
+    WHERE id = ${patientId}
+    RETURNING id, name, village, created_at::text, last_seen_at::text, visit_count
+  `) as PatientRow[];
+  if (!rows[0]) throw new Error(`unknown patient id: ${patientId}`);
+  return rowToPatient(rows[0]);
 }
 
-export function registerPatient(
+export async function registerPatient(
   name: string,
   village: string,
-): RegisteredPatient {
+): Promise<RegisteredPatient> {
   const nName = normalize(name);
   const nVillage = normalize(village);
   if (!nName || !nVillage) {
     throw new Error("name and village are required to register a patient");
   }
-  const existing = findPatient(nName, nVillage);
+  const existing = await findPatient(nName, nVillage);
   if (existing) return recordVisit(existing.id);
 
-  const db = getDb();
-  if (!db) throw new Error("patient registry storage is unavailable");
-  const now = new Date().toISOString();
+  const sql = await getSql();
+  if (!sql) throw new Error("patient registry storage is unavailable");
   const id = randomUUID();
-  db.prepare(
-    "INSERT INTO patients (id, name, village, created_at, last_seen_at, visit_count) VALUES (?, ?, ?, ?, ?, 1)",
-  ).run(id, nName, nVillage, now, now);
-  return rowToPatient({
-    id,
-    name: nName,
-    village: nVillage,
-    created_at: now,
-    last_seen_at: now,
-    visit_count: 1,
-  });
+  const rows = (await sql`
+    INSERT INTO patients (id, name, village)
+    VALUES (${id}, ${nName}, ${nVillage})
+    RETURNING id, name, village, created_at::text, last_seen_at::text, visit_count
+  `) as PatientRow[];
+  return rowToPatient(rows[0]);
 }
 
-export function resolvePatientForEncounter(input: {
+export async function resolvePatientForEncounter(input: {
   name: string;
   village: string;
   patientId?: string | null;
-}): RegisteredPatient | null {
-  if (!getDb()) return null;
+}): Promise<RegisteredPatient | null> {
+  const sql = await getSql();
+  if (!sql) return null;
   if (input.patientId) return recordVisit(input.patientId);
   const nName = normalize(input.name);
   const nVillage = normalize(input.village);

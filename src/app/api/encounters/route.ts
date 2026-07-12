@@ -7,7 +7,7 @@ import type { ClinicContext } from "@/lib/fevergate/treatment-plan";
 export async function POST(request: Request) {
   const body = await request.json();
   try {
-    logEncounter({
+    await logEncounter({
       ctx: body.patient as PatientContext,
       assessment: body.assessment as FebrileAssessment,
       clinic: body.clinic as ClinicContext,
