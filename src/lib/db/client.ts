@@ -47,6 +47,21 @@ async function ensureSchema(sql: Sql): Promise<void> {
         CREATE INDEX IF NOT EXISTS idx_patients_last_seen
           ON patients (last_seen_at DESC)
       `;
+      await sql`
+        CREATE TABLE IF NOT EXISTS activity_logs (
+          id BIGSERIAL PRIMARY KEY,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          event_type TEXT NOT NULL,
+          actor TEXT,
+          village TEXT,
+          patient_name TEXT,
+          metadata JSONB
+        )
+      `;
+      await sql`
+        CREATE INDEX IF NOT EXISTS idx_activity_logs_created
+          ON activity_logs (created_at DESC)
+      `;
     })().catch((err) => {
       // Allow a later call to retry schema creation.
       schemaReady = null;

@@ -37,9 +37,11 @@ function Row({ label, value }: { label: string; value: string }) {
 export function ReferralForm({
   data,
   onClose,
+  onPrint,
 }: {
   data: ReferralData;
   onClose: () => void;
+  onPrint?: () => void;
 }) {
   const dateStr = new Date().toLocaleString("en-GB");
   const vitalsParts: string[] = [];
@@ -57,7 +59,10 @@ export function ReferralForm({
         <div className="no-print mb-3 flex items-center justify-between gap-2">
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => {
+              onPrint?.();
+              window.print();
+            }}
             className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-teal-700"
           >
             <Printer className="h-4 w-4" />

@@ -1,5 +1,10 @@
 import type { EncounterRow } from "@/lib/db/encounters";
 import type { TriageDecision } from "@/lib/decision-engine/models";
+import {
+  normalizeVillage,
+  VILLAGE_KEYS,
+  type VillageKey,
+} from "@/lib/fevergate/villages";
 
 /** Age (in months) at/above which a patient is on the adult pathway (15 years). */
 const ADULT_AGE_MONTHS = 180;
@@ -57,6 +62,48 @@ export function summarizeEncounters(rows: EncounterRow[]): EncounterSummary {
   }
 
   return summary;
+}
+
+export interface VillageSummaryRow extends EncounterSummary {
+  village: VillageKey;
+}
+
+export function summarizeEncountersByVillage(
+  rows: EncounterRow[],
+): VillageSummaryRow[] {
+  const buckets = new Map<VillageKey, EncounterRow[]>(
+    VILLAGE_KEYS.map((village) => [village, []]),
+  );
+
+  for (const row of rows) {
+    const village = normalizeVillage(row.village);
+    buckets.get(village)!.push(row);
+  }
+
+  return VILLAGE_KEYS.map((village) => ({
+    village,
+    ...summarizeEncounters(buckets.get(village)!),
+  }));
+}
+
+export function groupEncountersByVillage(
+  rows: EncounterRow[],
+): Map<VillageKey, EncounterRow[]> {
+  const grouped = new Map<VillageKey, EncounterRow[]>(
+    VILLAGE_KEYS.map((village) => [village, []]),
+  );
+
+  for (const row of rows) {
+    const village = normalizeVillage(row.village);
+    grouped.get(village)!.push(row);
+  }
+
+  return grouped;
+}
+
+export function pct(part: number, whole: number): string {
+  if (whole === 0) return "—";
+  return `${Math.round((100 * part) / whole)}%`;
 }
 
 export function filterSince(rows: EncounterRow[], sinceMs: number): EncounterRow[] {
