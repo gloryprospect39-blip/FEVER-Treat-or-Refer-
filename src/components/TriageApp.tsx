@@ -3,6 +3,7 @@
 import {
   ArrowLeft,
   BarChart3,
+  ClipboardList,
   Calendar,
   FileText,
   Phone,
@@ -45,6 +46,8 @@ import {
   type ClinicContext,
   type TreatmentPlan,
 } from "@/lib/fevergate/treatment-plan";
+import { CLINIC_VILLAGES } from "@/lib/fevergate/villages";
+import { logActivityClient } from "@/lib/fevergate/log-activity";
 import { mm } from "@/lib/i18n/mm";
 import { toSentences } from "@/lib/utils";
 
@@ -138,6 +141,12 @@ export function TriageApp() {
     paracetamol_in_stock: paraInStock,
   });
 
+  const activityContext = () => ({
+    actor: clinicianName.trim() || null,
+    village: village.trim() || null,
+    patientName: patientName.trim() || null,
+  });
+
   const logEncounter = async (
     session: SessionResult,
     actionTaken: string,
@@ -182,6 +191,15 @@ export function TriageApp() {
         clinic,
       });
       setActionNote(null);
+      logActivityClient({
+        eventType: "assess_completed",
+        ...activityContext(),
+        metadata: {
+          decision: assessment.decision,
+          pathway,
+          ageBand,
+        },
+      });
     } catch {
       setError("ထည့်သွင်းမှု စစ်ဆေးပြီး ပြန်ကြိုးစားပါ။");
     }
@@ -198,7 +216,17 @@ export function TriageApp() {
   };
 
   const handleNewPatient = async (action: string) => {
-    if (result) await logEncounter(result, action);
+    if (result) {
+      await logEncounter(result, action);
+      logActivityClient({
+        eventType: "new_patient",
+        ...activityContext(),
+        metadata: {
+          decision: result.assessment.decision,
+          action,
+        },
+      });
+    }
     resetForm();
   };
 
@@ -275,6 +303,11 @@ export function TriageApp() {
               type="button"
               onClick={async () => {
                 await logEncounter(result, "teleconsultation_call");
+                logActivityClient({
+                  eventType: "teleconsultation_call",
+                  ...activityContext(),
+                  metadata: { decision: assessment.decision },
+                });
                 setActionNote(
                   `${mm.actions.dialTeleconsultation}: ${teleconsultationDialUrl().replace("tel:", "")}`,
                 );
@@ -294,6 +327,11 @@ export function TriageApp() {
                   assessment.monitoring_days,
                 );
                 await logEncounter(result, `schedule_teleconsultation: ${note}`);
+                logActivityClient({
+                  eventType: "schedule_teleconsultation",
+                  ...activityContext(),
+                  metadata: { note, decision: assessment.decision },
+                });
                 setActionNote(note);
               }}
               className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-amber-700"
@@ -308,6 +346,11 @@ export function TriageApp() {
               type="button"
               onClick={async () => {
                 await logEncounter(result, "start_treatment");
+                logActivityClient({
+                  eventType: "start_treatment",
+                  ...activityContext(),
+                  metadata: { decision: assessment.decision },
+                });
                 setActionNote(mm.actions.treatmentAcknowledged);
               }}
               className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-emerald-800"
@@ -319,7 +362,14 @@ export function TriageApp() {
 
           <button
             type="button"
-            onClick={() => setShowReferral(true)}
+            onClick={() => {
+              logActivityClient({
+                eventType: "open_referral_form",
+                ...activityContext(),
+                metadata: { decision: assessment.decision },
+              });
+              setShowReferral(true);
+            }}
             className="flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-6 py-3 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
           >
             <FileText className="h-4 w-4" />
@@ -348,6 +398,13 @@ export function TriageApp() {
         <ReferralForm
           data={referralData}
           onClose={() => setShowReferral(false)}
+          onPrint={() =>
+            logActivityClient({
+              eventType: "print_referral",
+              ...activityContext(),
+              metadata: { decision: assessment.decision },
+            })
+          }
         />
       )}
       </>
@@ -365,13 +422,22 @@ export function TriageApp() {
           {mm.app.title}
         </h1>
         <p className="mt-1 text-slate-500">{mm.app.tagline}</p>
-        <Link
-          href="/reports"
-          className="mt-3 inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-1.5 text-sm font-medium text-teal-700 shadow-sm transition hover:bg-teal-50"
-        >
-          <BarChart3 className="h-4 w-4" />
-          {mm.nav.reports}
-        </Link>
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+          <Link
+            href="/reports"
+            className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-1.5 text-sm font-medium text-teal-700 shadow-sm transition hover:bg-teal-50"
+          >
+            <BarChart3 className="h-4 w-4" />
+            {mm.nav.reports}
+          </Link>
+          <Link
+            href="/activity"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <ClipboardList className="h-4 w-4" />
+            {mm.nav.activity}
+          </Link>
+        </div>
       </header>
 
       <SectionCard title={mm.patient.title} icon={<User className="h-5 w-5" />}>
@@ -388,13 +454,18 @@ export function TriageApp() {
           </label>
           <label className="block">
             <span className="text-xs text-slate-500">{mm.patient.village}</span>
-            <input
-              type="text"
+            <select
               value={village}
               onChange={(e) => setVillage(e.target.value)}
-              placeholder={mm.patient.villagePlaceholder}
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+            >
+              <option value="">{mm.patient.villageSelect}</option>
+              {CLINIC_VILLAGES.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="block">
             <span className="text-xs text-slate-500">{mm.patient.clinician}</span>
