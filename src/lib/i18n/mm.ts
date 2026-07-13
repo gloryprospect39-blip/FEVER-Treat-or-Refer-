@@ -73,7 +73,7 @@ export const mm = {
     unconscious: "သတိမေ့လျော့ခြင်း",
     stiffNeck: "လည်ပင်းကြွက်သားတောင့်တင်းနေခြင်း",
     severePallor: "ခြေဖဝါး လက်ဖဝါး ဖြူဆုတ်နေခြင်း",
-    unableToDrinkPediatric: "နို့မစို့ ခြင်း",
+    unableToDrinkPediatric: "နို့မစို့ သို့မဟုတ် အစာမစားဝင်ခြင်း",
     unableToDrinkAdult: "အစာမစားဝင်ခြင်း",
     lethargic: "နုန်းချိနေခြင်း",
     chestIndrawing: "အသက်ရှူလျှင် ရင်ဘတ်ချိုင့်ဝင်နေခြင်း",
