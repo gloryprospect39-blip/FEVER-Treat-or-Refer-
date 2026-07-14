@@ -18,6 +18,10 @@ import {
   type EncounterSummary,
   type VillageSummaryRow,
 } from "@/lib/fevergate/reports";
+import {
+  summarizeDrugDispensing,
+  type DrugDispensingSummary,
+} from "@/lib/fevergate/drug-dispensing";
 import { CLINIC_VILLAGES, type VillageKey } from "@/lib/fevergate/villages";
 import { mm } from "@/lib/i18n/mm";
 
@@ -241,6 +245,71 @@ function RecentByVillage({ rows }: { rows: EncounterRow[] }) {
   );
 }
 
+function DrugDispensingReportTable({
+  title,
+  summary,
+}: {
+  title: string;
+  summary: DrugDispensingSummary;
+}) {
+  const rows = [
+    {
+      drug: mm.drugDispensing.actLabel,
+      counts: summary.act,
+    },
+    {
+      drug: mm.drugDispensing.paracetamolLabel,
+      counts: summary.paracetamol,
+    },
+  ];
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="mb-1 text-lg font-bold text-slate-900">{title}</h2>
+      <p className="mb-3 text-sm text-slate-500">{mm.report.stockReportSubtitle}</p>
+      {summary.logged === 0 ? (
+        <p className="py-4 text-center text-sm text-slate-500">
+          {mm.report.stockReportEmpty}
+        </p>
+      ) : (
+        <>
+          <p className="mb-3 text-sm font-medium text-teal-700">
+            {mm.report.stockPatientsLogged}: {summary.logged}
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
+                  <th className="py-2 pr-3 font-medium">{mm.report.stockColDrug}</th>
+                  <th className="py-2 pr-3 font-medium">{mm.report.stockColGiven}</th>
+                  <th className="py-2 pr-3 font-medium">{mm.report.stockColOutOfStock}</th>
+                  <th className="py-2 font-medium">{mm.report.stockColNotIndicated}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.drug} className="border-b border-slate-100">
+                    <td className="py-2 pr-3 font-medium text-slate-900">
+                      {row.drug}
+                    </td>
+                    <td className="py-2 pr-3 text-emerald-700">{row.counts.given}</td>
+                    <td className="py-2 pr-3 text-rose-700">
+                      {row.counts.out_of_stock}
+                    </td>
+                    <td className="py-2 text-slate-600">
+                      {row.counts.not_indicated}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
 export default async function ReportsPage() {
   const rows = await loadEncounters();
   const now = new Date();
@@ -250,6 +319,8 @@ export default async function ReportsPage() {
   const weeklySummary = summarizeEncounters(weeklyRows);
   const dailyByVillage = summarizeEncountersByVillage(dailyRows);
   const weeklyByVillage = summarizeEncountersByVillage(weeklyRows);
+  const dailyDrugDispensing = summarizeDrugDispensing(dailyRows);
+  const weeklyDrugDispensing = summarizeDrugDispensing(weeklyRows);
 
   const recent = [...rows]
     .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))
@@ -297,11 +368,21 @@ export default async function ReportsPage() {
           total={dailySummary.total}
         />
 
+        <DrugDispensingReportTable
+          title={mm.report.stockReportTitle}
+          summary={dailyDrugDispensing}
+        />
+
         <SummaryBlock title={mm.report.weekly} summary={weeklySummary} />
         <VillageBreakdownTable
           title={`${mm.report.weekly} — ${mm.report.byVillage}`}
           rows={weeklyByVillage}
           total={weeklySummary.total}
+        />
+
+        <DrugDispensingReportTable
+          title={`${mm.report.weekly} — ${mm.report.stockReportTitle}`}
+          summary={weeklyDrugDispensing}
         />
 
         <RecentByVillage rows={recent} />

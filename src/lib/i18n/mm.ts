@@ -32,6 +32,17 @@ export const mm = {
     drugUnavailable: (name: string) => `${name} — မပေးနိုင်ပါ`,
   },
 
+  drugDispensing: {
+    title: "ဤလူနာအတွက် ဆေးပေးမှု",
+    subtitle: "ကုသမှု / တယ်လီ အကြံပြု မတိုင်မီ ရွေးပါ",
+    actLabel: "ဌက်ဖျားဆေး",
+    paracetamolLabel: "ပါရာစီတမော",
+    given: "ပေးပြီး",
+    outOfStock: "စတော့ မရှိ",
+    notIndicated: "မလိုပါ",
+    cancel: "ပယ်ဖျက်ရန်",
+  },
+
   age: {
     title: "အသက်အုပ်စု",
     pathwayChild: "ကလေး (၁၅ နှစ်အောက်)",
@@ -240,6 +251,14 @@ export const mm = {
     colPctTotal: "ခုနှုန်း %",
     colReferralRate: "ပို့ဆောင်မှု နှုန်း",
     villageUnknown: "မသတ်မှတ်ရေး",
+    stockReportTitle: "ယနေ့ ဆေးသုံးစွဲမှု (ချက်ချင်း)",
+    stockReportSubtitle: "ကုသမှု / တယ်လီ အကြံပြု လုပ်ဆောင်ချက်မှတ်တမ်းများ",
+    stockReportEmpty: "ယနေ့ ဆေးပေးမှု မှတ်တမ်း မရှိသေးပါ။",
+    stockColDrug: "ဆေး",
+    stockColGiven: "ပေးပြီး",
+    stockColOutOfStock: "စတော့ မရှိ",
+    stockColNotIndicated: "မလိုပါ",
+    stockPatientsLogged: "မှတ်တမ်းရှိ လူနာ",
     recent: "မကြာသေးမီ လူနာများ",
     colTime: "အချိန်",
     colName: "အမည်",

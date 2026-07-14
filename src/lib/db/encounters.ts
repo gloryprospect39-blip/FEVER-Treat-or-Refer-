@@ -2,6 +2,7 @@ import "server-only";
 
 import type { FebrileAssessment, PatientContext } from "@/lib/decision-engine/models";
 import type { ClinicContext } from "@/lib/fevergate/treatment-plan";
+import type { PatientDrugDispensing } from "@/lib/fevergate/drug-dispensing";
 import { getSql } from "./client";
 
 export interface EncounterRow {
@@ -13,6 +14,7 @@ export interface EncounterRow {
   patient_name?: string | null;
   village?: string | null;
   clinician?: string | null;
+  drug_dispensing?: PatientDrugDispensing | null;
 }
 
 export async function logEncounter(input: {
@@ -23,6 +25,7 @@ export async function logEncounter(input: {
   patientName?: string | null;
   village?: string | null;
   clinician?: string | null;
+  drugDispensing?: PatientDrugDispensing | null;
 }): Promise<void> {
   const row: EncounterRow = {
     timestamp: new Date().toISOString(),
@@ -33,6 +36,7 @@ export async function logEncounter(input: {
     patient_name: input.patientName ?? null,
     village: input.village ?? null,
     clinician: input.clinician ?? null,
+    drug_dispensing: input.drugDispensing ?? null,
   };
 
   // Best-effort: logging must never break the triage flow if the database is
