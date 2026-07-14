@@ -78,7 +78,12 @@ export const mm = {
     show: "အချက်အလက် ထည့်ရန်",
     hide: "အချက်အလက် ဝှက်ရန်",
     notMeasuredHelp: "မတိုင်းတာရသေးပါက ဗလာထားပါ။",
-    systolicBp: "ဆီစတိုလစ် သွေးဖိအား",
+    coreGroup: "အခြေခံ",
+    circulationGroup: "သွေးကြော",
+    respiratoryGroup: "အသက်ရှု / SpO₂",
+    temperature: "ကိုယ်အပူချိန် (°C)",
+    heartRate: "နှလုံးခုန်နှုန်း /မိနစ်",
+    systolicBp: "အပေါ် သွေးဖိအား",
     spo2: "SpO₂ %",
     respiratoryRate: "အသက်ရှုနှုန်း /မိနစ်",
   },
@@ -228,7 +233,9 @@ export const mm = {
     signature: "လက်မှတ်",
     disclaimer:
       "ဤဖောင်သည် ပဏာမ အကြမ်းမျဥ်း အသုံးပြုရန်သာ ဖြစ်ပါသည်။",
-    systolicBp: "ဆီစတိုလစ် သွေးဖိအား",
+    systolicBp: "အပေါ် သွေးဖိအား",
+    temperature: "ကိုယ်အပူချိန်",
+    heartRate: "နှလုံးခုန်နှုန်း",
     spo2: "SpO₂",
     respiratoryRate: "အသက်ရှုနှုန်း",
   },
@@ -297,7 +304,7 @@ export const mm = {
     paracetamolForFever: " ဖျားရန် ပါရာစီတမောပေးပါ။",
     recheckInDays: (days: number) =>
       ` ဤလူနာကို ${days} ရက်အကြာတွင် ပြန်စစ်ဆေးရန်။`,
-    giveParacetamol: "ဖျားရန် ပါရာစီတမောൾ ပေးရန်",
+    giveParacetamol: "ဖျားရန် ပါရာစီတမော ပေးရန်",
     supportiveFever: (days: number) =>
       `ရိုးရှင်းသော ဖျားအတွက် ထောက်ပံ့ကုသမှု။ ${days} ရက်အကြာတွင် ပြန်စစ်ဆေးရန်။ အန္တရာယ်လက္ခဏာ ပေါ်ပါက အမြန်ပြန်လာရန်။`,
     supportiveCare: "ထောက်ပံ့ကုသမှု နှင့် စောင့်ကြည့်ခြင်း",

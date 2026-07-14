@@ -139,6 +139,8 @@ export function TriageApp() {
   const [systolicBp, setSystolicBp] = useState(0);
   const [spo2, setSpo2] = useState(0);
   const [respiratoryRate, setRespiratoryRate] = useState(0);
+  const [temperatureC, setTemperatureC] = useState(0);
+  const [heartRate, setHeartRate] = useState(0);
   const [showVitals, setShowVitals] = useState(false);
 
   const [dangerTiles, setDangerTiles] = useState<Record<string, boolean>>({});
@@ -279,6 +281,8 @@ export function TriageApp() {
         systolicBp: systolicBp || null,
         spo2Percent: spo2 || null,
         respiratoryRate: respiratoryRate || null,
+        temperatureC: temperatureC || null,
+        heartRate: heartRate || null,
       });
       const assessment = evaluateFebrilePatient(ctx);
       const stockNeeded = needsStockPrompt(ctx, assessment, endemicity);
@@ -370,7 +374,13 @@ export function TriageApp() {
       pathwayLabel: pathway,
       hasFever,
       feverDays: clampFeverDays(feverDays),
-      vitals: { systolicBp, spo2, respiratoryRate },
+      vitals: {
+        systolicBp,
+        spo2,
+        respiratoryRate,
+        temperatureC,
+        heartRate,
+      },
       dangerSignLabels: dangerSignTilesForPathway(pathway)
         .filter((t) => dangerTiles[t.triggerCode])
         .map((t) => t.label),
@@ -746,25 +756,83 @@ export function TriageApp() {
                 {mm.vitals.notMeasuredHelp}
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[
-                [mm.vitals.systolicBp, systolicBp, setSystolicBp],
-                [mm.vitals.spo2, spo2, setSpo2],
-                [mm.vitals.respiratoryRate, respiratoryRate, setRespiratoryRate],
-              ].map(([label, val, setter]) => (
-                <label key={label as string} className="block">
-                  <span className="text-xs text-slate-500">{label as string}</span>
+            <div className="space-y-4">
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {mm.vitals.coreGroup}
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs text-slate-500">{mm.vitals.temperature}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={45}
+                      step={0.1}
+                      value={temperatureC || ""}
+                      onChange={(e) =>
+                        setTemperatureC(Number(e.target.value) || 0)
+                      }
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs text-slate-500">{mm.vitals.heartRate}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={heartRate || ""}
+                      onChange={(e) => setHeartRate(Number(e.target.value) || 0)}
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                </div>
+              </div>
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {mm.vitals.circulationGroup}
+                </p>
+                <label className="block">
+                  <span className="text-xs text-slate-500">{mm.vitals.systolicBp}</span>
                   <input
                     type="number"
                     min={0}
-                    value={val as number}
-                    onChange={(e) =>
-                      (setter as (n: number) => void)(Number(e.target.value))
-                    }
+                    value={systolicBp || ""}
+                    onChange={(e) => setSystolicBp(Number(e.target.value) || 0)}
                     className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
                   />
                 </label>
-              ))}
+              </div>
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {mm.vitals.respiratoryGroup}
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs text-slate-500">{mm.vitals.spo2}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={spo2 || ""}
+                      onChange={(e) => setSpo2(Number(e.target.value) || 0)}
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs text-slate-500">{mm.vitals.respiratoryRate}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={respiratoryRate || ""}
+                      onChange={(e) =>
+                        setRespiratoryRate(Number(e.target.value) || 0)
+                      }
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         )}
