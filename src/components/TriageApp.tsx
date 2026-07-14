@@ -84,6 +84,21 @@ const CARD_STYLES: Record<
   },
 };
 
+const FEVER_DAYS_MAX = 60;
+
+function clampFeverDays(value: string): number {
+  if (!value.trim()) return 0;
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n)) return 0;
+  return Math.min(FEVER_DAYS_MAX, Math.max(0, n));
+}
+
+function normalizeFeverDaysInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 2);
+  if (!digits) return "";
+  return String(parseInt(digits, 10));
+}
+
 export function TriageApp() {
   const [result, setResult] = useState<SessionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +115,7 @@ export function TriageApp() {
   );
 
   const [hasFever, setHasFever] = useState(true);
-  const [feverDays, setFeverDays] = useState(1);
+  const [feverDays, setFeverDays] = useState("1");
   const [systolicBp, setSystolicBp] = useState(0);
   const [spo2, setSpo2] = useState(0);
   const [respiratoryRate, setRespiratoryRate] = useState(0);
@@ -174,7 +189,7 @@ export function TriageApp() {
         pathway,
         ageBand,
         hasFever,
-        feverDurationDays: feverDays,
+        feverDurationDays: clampFeverDays(feverDays),
         selectedTiles: dangerTiles,
         comorbidities,
         systolicBp: systolicBp || null,
@@ -250,7 +265,7 @@ export function TriageApp() {
       ageBand,
       pathwayLabel: pathway,
       hasFever,
-      feverDays,
+      feverDays: clampFeverDays(feverDays),
       vitals: { systolicBp, spo2, respiratoryRate },
       dangerSignLabels: dangerSignTilesForPathway(pathway)
         .filter((t) => dangerTiles[t.triggerCode])
@@ -606,12 +621,19 @@ export function TriageApp() {
           <label className="block">
             <span className="text-xs text-slate-500">{mm.fever.durationDays}</span>
             <input
-              type="number"
-              min={0}
-              max={60}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
               value={feverDays}
-              onChange={(e) => setFeverDays(Number(e.target.value))}
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              onChange={(e) => setFeverDays(normalizeFeverDaysInput(e.target.value))}
+              onBlur={() => {
+                if (!feverDays.trim()) {
+                  setFeverDays("1");
+                  return;
+                }
+                setFeverDays(String(clampFeverDays(feverDays)));
+              }}
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm tabular-nums"
             />
           </label>
         </div>
