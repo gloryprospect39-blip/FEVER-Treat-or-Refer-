@@ -617,37 +617,47 @@ export function TriageApp() {
         </div>
       </SectionCard>
 
-      <SectionCard title={mm.vitals.title}>
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-4">
         <button
           type="button"
           onClick={() => setShowVitals(!showVitals)}
-          className="text-sm font-medium text-teal-700"
+          className="text-sm font-medium text-teal-700 hover:text-teal-800"
         >
           {showVitals ? mm.vitals.hide : mm.vitals.show}
         </button>
         {showVitals && (
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            {[
-              [mm.vitals.systolicBp, systolicBp, setSystolicBp],
-              [mm.vitals.spo2, spo2, setSpo2],
-              [mm.vitals.respiratoryRate, respiratoryRate, setRespiratoryRate],
-            ].map(([label, val, setter]) => (
-              <label key={label as string} className="block">
-                <span className="text-xs text-slate-500">{label as string}</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={val as number}
-                  onChange={(e) =>
-                    (setter as (n: number) => void)(Number(e.target.value))
-                  }
-                  className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
-                />
-              </label>
-            ))}
+          <div className="mt-4 space-y-4 border-t border-slate-200 pt-4">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">
+                {mm.vitals.title}
+              </h2>
+              <p className="mt-0.5 text-sm text-slate-500">
+                {mm.vitals.notMeasuredHelp}
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                [mm.vitals.systolicBp, systolicBp, setSystolicBp],
+                [mm.vitals.spo2, spo2, setSpo2],
+                [mm.vitals.respiratoryRate, respiratoryRate, setRespiratoryRate],
+              ].map(([label, val, setter]) => (
+                <label key={label as string} className="block">
+                  <span className="text-xs text-slate-500">{label as string}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={val as number}
+                    onChange={(e) =>
+                      (setter as (n: number) => void)(Number(e.target.value))
+                    }
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
+                  />
+                </label>
+              ))}
+            </div>
           </div>
         )}
-      </SectionCard>
+      </div>
 
       <SectionCard
         title={
