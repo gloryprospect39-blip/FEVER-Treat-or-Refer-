@@ -11,15 +11,25 @@ export const mm = {
 
   clinic: {
     title: "ဆေးခန်း အခြေအနေ",
-    stockHeading: "ယနေ့ စတော့",
     endemicityHeading: "ဌက်ဖျားရောဂါ ဖြစ်ပွားမှု",
     showSettings: "ဆက်တင်များ ပြရန်",
     hideSettings: "ဆက်တင်များ ဝှက်ရန်",
     highEndemicity: "ဖြစ်ပွားမှု များသော",
     lowEndemicity: "ဖြစ်ပွားမှု နည်းသော",
-    actInStock: "ဌက်ဖျားဆေး ရှိသည်",
-    amoxicillin: "အမောက်ဆီလင်",
-    paracetamol: "ပါရာစီတမောရှိသည်",
+  },
+
+  stockPrompt: {
+    title: "ယနေ့ ဆေးခန်းတွင် ရှိ/မရှိ",
+    actQuestion: "ဌက်ဖျားဆေး — ယနေ့ ပေးနိုင်ပါသလား?",
+    paracetamolQuestion: "ပါရာစီတမော — ယနေ့ ပေးနိုင်ပါသလား?",
+    actLabel: "ဌက်ဖျားဆေး",
+    paracetamolLabel: "ပါရာစီတမော",
+    yes: "ပေးနိုင်သည်",
+    no: "မပေးနိုင်ပါ",
+    change: "ပြောင်းရန်",
+    answerToSeePlan: "ကုသမှု အစီအစဉ် ကြည့်ရန် ဆေးရှိ/မရှိ ကို ရွေးပါ။",
+    drugAvailable: (name: string) => `${name} — ပေးနိုင်သည်`,
+    drugUnavailable: (name: string) => `${name} — မပေးနိုင်ပါ`,
   },
 
   age: {

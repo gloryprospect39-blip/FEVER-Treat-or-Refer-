@@ -17,6 +17,10 @@ import { useEffect, useState } from "react";
 
 import { ReferralForm, type ReferralData } from "@/components/ReferralForm";
 import { SectionCard } from "@/components/SectionCard";
+import {
+  StockPromptPanel,
+  StockSessionSummary,
+} from "@/components/StockPromptPanel";
 import { ToggleChip } from "@/components/ToggleChip";
 import { evaluateFebrilePatient } from "@/lib/decision-engine";
 import type {
@@ -48,6 +52,13 @@ import {
 } from "@/lib/fevergate/treatment-plan";
 import { CLINIC_VILLAGES } from "@/lib/fevergate/villages";
 import { logActivityClient } from "@/lib/fevergate/log-activity";
+import {
+  buildClinicWithStock,
+  needsStockPrompt,
+  sessionStockForDrugs,
+  stockDrugsNeeded,
+  type SessionStock,
+} from "@/lib/fevergate/stock-prompts";
 import { mm } from "@/lib/i18n/mm";
 import { toSentences } from "@/lib/utils";
 
@@ -84,6 +95,21 @@ const CARD_STYLES: Record<
   },
 };
 
+const FEVER_DAYS_MAX = 60;
+
+function clampFeverDays(value: string): number {
+  if (!value.trim()) return 0;
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n)) return 0;
+  return Math.min(FEVER_DAYS_MAX, Math.max(0, n));
+}
+
+function normalizeFeverDaysInput(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 2);
+  if (!digits) return "";
+  return String(parseInt(digits, 10));
+}
+
 export function TriageApp() {
   const [result, setResult] = useState<SessionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +126,7 @@ export function TriageApp() {
   );
 
   const [hasFever, setHasFever] = useState(true);
-  const [feverDays, setFeverDays] = useState(1);
+  const [feverDays, setFeverDays] = useState("1");
   const [systolicBp, setSystolicBp] = useState(0);
   const [spo2, setSpo2] = useState(0);
   const [respiratoryRate, setRespiratoryRate] = useState(0);
@@ -110,10 +136,9 @@ export function TriageApp() {
   const [comorbidities, setComorbidities] = useState<Comorbidity[]>([]);
 
   const [endemicity, setEndemicity] = useState<"high" | "low">("high");
-  const [actInStock, setActInStock] = useState(true);
-  const [amoxInStock, setAmoxInStock] = useState(false);
-  const [paraInStock, setParaInStock] = useState(true);
   const [showClinic, setShowClinic] = useState(false);
+  const [sessionStock, setSessionStock] = useState<SessionStock | null>(null);
+  const [stockPromptOpen, setStockPromptOpen] = useState(false);
 
   useEffect(() => {
     const bands = ageBandsForPathway(pathway);
@@ -134,12 +159,23 @@ export function TriageApp() {
     setDangerTiles((prev) => ({ ...prev, [code]: !prev[code] }));
   };
 
-  const clinicContext = (): ClinicContext => ({
-    malaria_endemicity: endemicity,
-    act_in_stock: actInStock,
-    amoxicillin_in_stock: amoxInStock,
-    paracetamol_in_stock: paraInStock,
-  });
+  const clinicContextForStock = (stock: SessionStock): ClinicContext =>
+    buildClinicWithStock(endemicity, stock);
+
+  const applyStockToResult = (stock: SessionStock) => {
+    setSessionStock(stock);
+    setStockPromptOpen(false);
+    setResult((current) => {
+      if (!current) return current;
+      const clinic = clinicContextForStock(stock);
+      const treatmentPlan = buildTreatmentPlan(
+        current.patientContext,
+        current.assessment,
+        clinic,
+      );
+      return { ...current, clinic, treatmentPlan };
+    });
+  };
 
   const activityContext = () => ({
     actor: clinicianName.trim() || null,
@@ -169,12 +205,11 @@ export function TriageApp() {
   const handleAssess = () => {
     setError(null);
     try {
-      const clinic = clinicContext();
       const ctx = buildPatientContext({
         pathway,
         ageBand,
         hasFever,
-        feverDurationDays: feverDays,
+        feverDurationDays: clampFeverDays(feverDays),
         selectedTiles: dangerTiles,
         comorbidities,
         systolicBp: systolicBp || null,
@@ -182,8 +217,15 @@ export function TriageApp() {
         respiratoryRate: respiratoryRate || null,
       });
       const assessment = evaluateFebrilePatient(ctx);
+      const stockNeeded = needsStockPrompt(ctx, assessment, endemicity);
+      const drugsNeeded = stockDrugsNeeded(ctx, assessment, endemicity);
+      const stock = sessionStock
+        ? sessionStockForDrugs(sessionStock, drugsNeeded)
+        : { act: true, paracetamol: true };
+      const clinic = clinicContextForStock(stock);
       const treatmentPlan = buildTreatmentPlan(ctx, assessment, clinic);
 
+      setStockPromptOpen(stockNeeded && !sessionStock);
       setResult({
         assessment,
         patientContext: ctx,
@@ -209,6 +251,7 @@ export function TriageApp() {
     setResult(null);
     setActionNote(null);
     setShowReferral(false);
+    setStockPromptOpen(false);
     setDangerTiles({});
     setComorbidities([]);
     setPatientName("");
@@ -231,17 +274,28 @@ export function TriageApp() {
   };
 
   if (result) {
-    const { assessment, treatmentPlan } = result;
+    const { assessment, treatmentPlan, patientContext } = result;
     const style = CARD_STYLES[assessment.decision];
     const isRefer =
       assessment.decision === "REFER" ||
       assessment.decision === "REFER_IMMEDIATE";
+    const drugsNeeded = stockDrugsNeeded(
+      patientContext,
+      assessment,
+      endemicity,
+    );
+    const stockRequired = drugsNeeded.length > 0;
+    const awaitingStock = stockRequired && stockPromptOpen;
+    const showStockSummary =
+      stockRequired && sessionStock && !stockPromptOpen;
 
     const reason = isRefer
       ? buildReferReason(assessment.referral_reasons, assessment.urgency, pathway)
       : assessment.decision === "TREAT_AND_MONITOR"
         ? mm.result.monitorReason(assessment.monitoring_days)
-        : treatmentPlan.summary;
+        : awaitingStock
+          ? mm.stockPrompt.answerToSeePlan
+          : treatmentPlan.summary;
 
     const referralData: ReferralData = {
       patientName: patientName.trim() || mm.patient.unnamed,
@@ -250,7 +304,7 @@ export function TriageApp() {
       ageBand,
       pathwayLabel: pathway,
       hasFever,
-      feverDays,
+      feverDays: clampFeverDays(feverDays),
       vitals: { systolicBp, spo2, respiratoryRate },
       dangerSignLabels: dangerSignTilesForPathway(pathway)
         .filter((t) => dangerTiles[t.triggerCode])
@@ -284,11 +338,27 @@ export function TriageApp() {
               <p key={i}>{sentence}</p>
             ))}
           </div>
-          <div className="mt-4 space-y-1.5 text-base leading-relaxed opacity-95">
-            {toSentences(treatmentPlan.detail).map((sentence, i) => (
-              <p key={i}>{sentence}</p>
-            ))}
-          </div>
+          {stockRequired && stockPromptOpen && (
+            <StockPromptPanel
+              needed={drugsNeeded}
+              initial={sessionStock ?? undefined}
+              onConfirm={applyStockToResult}
+            />
+          )}
+          {showStockSummary && sessionStock && (
+            <StockSessionSummary
+              needed={drugsNeeded}
+              stock={sessionStock}
+              onChange={() => setStockPromptOpen(true)}
+            />
+          )}
+          {!awaitingStock && (
+            <div className="mt-4 space-y-1.5 text-base leading-relaxed opacity-95">
+              {toSentences(treatmentPlan.detail).map((sentence, i) => (
+                <p key={i}>{sentence}</p>
+              ))}
+            </div>
+          )}
         </div>
 
         {actionNote && (
@@ -322,6 +392,7 @@ export function TriageApp() {
           {assessment.decision === "TREAT_AND_MONITOR" && (
             <button
               type="button"
+              disabled={awaitingStock}
               onClick={async () => {
                 const note = scheduleTeleconsultationNote(
                   assessment.monitoring_days,
@@ -334,7 +405,7 @@ export function TriageApp() {
                 });
                 setActionNote(note);
               }}
-              className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-amber-700"
+              className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Calendar className="h-5 w-5" />
               {treatmentPlan.primaryActionLabel}
@@ -344,6 +415,7 @@ export function TriageApp() {
           {assessment.decision === "TREAT" && (
             <button
               type="button"
+              disabled={awaitingStock}
               onClick={async () => {
                 await logEncounter(result, "start_treatment");
                 logActivityClient({
@@ -353,7 +425,7 @@ export function TriageApp() {
                 });
                 setActionNote(mm.actions.treatmentAcknowledged);
               }}
-              className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-emerald-800"
+              className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Stethoscope className="h-5 w-5" />
               {treatmentPlan.primaryActionLabel}
@@ -492,56 +564,27 @@ export function TriageApp() {
           {showClinic ? mm.clinic.hideSettings : mm.clinic.showSettings}
         </button>
         {showClinic && (
-          <div className="space-y-5">
-            <div>
-              <p className="mb-3 text-sm font-semibold text-slate-800">
-                {mm.clinic.stockHeading}
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  [mm.clinic.actInStock, actInStock, setActInStock],
-                  [mm.clinic.amoxicillin, amoxInStock, setAmoxInStock],
-                  [mm.clinic.paracetamol, paraInStock, setParaInStock],
-                ].map(([label, val, setter]) => (
-                  <button
-                    key={label as string}
-                    type="button"
-                    onClick={() =>
-                      (setter as (v: boolean) => void)(!(val as boolean))
-                    }
-                    className={`rounded-lg px-2 py-2 text-xs font-medium ${
-                      val
-                        ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300"
-                        : "bg-slate-100 text-slate-500"
-                    }`}
-                  >
-                    {label as string}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="mb-3 text-sm font-semibold text-slate-800">
-                {mm.clinic.endemicityHeading}
-              </p>
-              <div className="flex gap-2">
-                {(["high", "low"] as const).map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setEndemicity(v)}
-                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
-                      endemicity === v
-                        ? "bg-teal-600 text-white"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {v === "high"
-                      ? mm.clinic.highEndemicity
-                      : mm.clinic.lowEndemicity}
-                  </button>
-                ))}
-              </div>
+          <div>
+            <p className="mb-3 text-sm font-semibold text-slate-800">
+              {mm.clinic.endemicityHeading}
+            </p>
+            <div className="flex gap-2">
+              {(["high", "low"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setEndemicity(v)}
+                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
+                    endemicity === v
+                      ? "bg-teal-600 text-white"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {v === "high"
+                    ? mm.clinic.highEndemicity
+                    : mm.clinic.lowEndemicity}
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -606,12 +649,19 @@ export function TriageApp() {
           <label className="block">
             <span className="text-xs text-slate-500">{mm.fever.durationDays}</span>
             <input
-              type="number"
-              min={0}
-              max={60}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
               value={feverDays}
-              onChange={(e) => setFeverDays(Number(e.target.value))}
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              onChange={(e) => setFeverDays(normalizeFeverDaysInput(e.target.value))}
+              onBlur={() => {
+                if (!feverDays.trim()) {
+                  setFeverDays("1");
+                  return;
+                }
+                setFeverDays(String(clampFeverDays(feverDays)));
+              }}
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm tabular-nums"
             />
           </label>
         </div>
