@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ReferralForm, type ReferralData } from "@/components/ReferralForm";
+import { PatientDrugPanel } from "@/components/PatientDrugPanel";
 import { SectionCard } from "@/components/SectionCard";
 import {
   StockPromptPanel,
@@ -51,6 +52,10 @@ import {
   type TreatmentPlan,
 } from "@/lib/fevergate/treatment-plan";
 import { CLINIC_VILLAGES } from "@/lib/fevergate/villages";
+import {
+  drugsToLogForPatient,
+  type PatientDrugDispensing,
+} from "@/lib/fevergate/drug-dispensing";
 import { logActivityClient } from "@/lib/fevergate/log-activity";
 import {
   buildClinicWithStock,
@@ -68,6 +73,10 @@ interface SessionResult {
   treatmentPlan: TreatmentPlan;
   clinic: ClinicContext;
 }
+
+type PendingTreatAction =
+  | { type: "start_treatment" }
+  | { type: "schedule_teleconsultation" };
 
 const CARD_STYLES: Record<
   TriageDecision,
@@ -139,6 +148,8 @@ export function TriageApp() {
   const [showClinic, setShowClinic] = useState(false);
   const [sessionStock, setSessionStock] = useState<SessionStock | null>(null);
   const [stockPromptOpen, setStockPromptOpen] = useState(false);
+  const [pendingTreatAction, setPendingTreatAction] =
+    useState<PendingTreatAction | null>(null);
 
   useEffect(() => {
     const bands = ageBandsForPathway(pathway);
@@ -186,6 +197,7 @@ export function TriageApp() {
   const logEncounter = async (
     session: SessionResult,
     actionTaken: string,
+    drugDispensing?: PatientDrugDispensing | null,
   ) => {
     await fetch("/api/encounters", {
       method: "POST",
@@ -195,11 +207,63 @@ export function TriageApp() {
         assessment: session.assessment,
         clinic: session.clinic,
         actionTaken,
+        drugDispensing: drugDispensing ?? null,
         patientName: patientName.trim() || null,
         village: village.trim() || null,
         clinician: clinicianName.trim() || null,
       }),
     });
+  };
+
+  const executeTreatAction = async (
+    action: PendingTreatAction,
+    dispensing: PatientDrugDispensing,
+  ) => {
+    if (!result) return;
+    const { assessment } = result;
+
+    if (action.type === "start_treatment") {
+      await logEncounter(result, "start_treatment", dispensing);
+      logActivityClient({
+        eventType: "start_treatment",
+        ...activityContext(),
+        metadata: { decision: assessment.decision, drug_dispensing: dispensing },
+      });
+      setActionNote(mm.actions.treatmentAcknowledged);
+    } else {
+      const note = scheduleTeleconsultationNote(assessment.monitoring_days);
+      await logEncounter(result, `schedule_teleconsultation: ${note}`, dispensing);
+      logActivityClient({
+        eventType: "schedule_teleconsultation",
+        ...activityContext(),
+        metadata: {
+          note,
+          decision: assessment.decision,
+          drug_dispensing: dispensing,
+        },
+      });
+      setActionNote(note);
+    }
+    setPendingTreatAction(null);
+  };
+
+  const requestTreatAction = (action: PendingTreatAction) => {
+    if (!result) return;
+    const drugs = drugsToLogForPatient(
+      result.patientContext,
+      result.assessment,
+      endemicity,
+    );
+    if (drugs.length > 0) {
+      setPendingTreatAction(action);
+      return;
+    }
+    void executeTreatAction(action, {});
+  };
+
+  const completeTreatAction = (dispensing: PatientDrugDispensing) => {
+    if (!pendingTreatAction) return;
+    void executeTreatAction(pendingTreatAction, dispensing);
   };
 
   const handleAssess = () => {
@@ -252,6 +316,7 @@ export function TriageApp() {
     setActionNote(null);
     setShowReferral(false);
     setStockPromptOpen(false);
+    setPendingTreatAction(null);
     setDangerTiles({});
     setComorbidities([]);
     setPatientName("");
@@ -393,18 +458,9 @@ export function TriageApp() {
             <button
               type="button"
               disabled={awaitingStock}
-              onClick={async () => {
-                const note = scheduleTeleconsultationNote(
-                  assessment.monitoring_days,
-                );
-                await logEncounter(result, `schedule_teleconsultation: ${note}`);
-                logActivityClient({
-                  eventType: "schedule_teleconsultation",
-                  ...activityContext(),
-                  metadata: { note, decision: assessment.decision },
-                });
-                setActionNote(note);
-              }}
+              onClick={() =>
+                requestTreatAction({ type: "schedule_teleconsultation" })
+              }
               className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Calendar className="h-5 w-5" />
@@ -416,15 +472,7 @@ export function TriageApp() {
             <button
               type="button"
               disabled={awaitingStock}
-              onClick={async () => {
-                await logEncounter(result, "start_treatment");
-                logActivityClient({
-                  eventType: "start_treatment",
-                  ...activityContext(),
-                  metadata: { decision: assessment.decision },
-                });
-                setActionNote(mm.actions.treatmentAcknowledged);
-              }}
+              onClick={() => requestTreatAction({ type: "start_treatment" })}
               className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Stethoscope className="h-5 w-5" />
@@ -466,6 +514,19 @@ export function TriageApp() {
           </button>
         </div>
       </div>
+      {pendingTreatAction && result && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+          <PatientDrugPanel
+            needed={drugsToLogForPatient(
+              result.patientContext,
+              result.assessment,
+              endemicity,
+            )}
+            onConfirm={completeTreatAction}
+            onCancel={() => setPendingTreatAction(null)}
+          />
+        </div>
+      )}
       {showReferral && (
         <ReferralForm
           data={referralData}
