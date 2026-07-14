@@ -13,7 +13,13 @@ export interface ReferralData {
   pathwayLabel: string;
   hasFever: boolean;
   feverDays: number;
-  vitals: { systolicBp: number; spo2: number; respiratoryRate: number };
+  vitals: {
+    systolicBp: number;
+    spo2: number;
+    respiratoryRate: number;
+    temperatureC: number;
+    heartRate: number;
+  };
   dangerSignLabels: string[];
   comorbidityLabels: string[];
   decisionLabel: string;
@@ -45,6 +51,10 @@ export function ReferralForm({
 }) {
   const dateStr = new Date().toLocaleString("en-GB");
   const vitalsParts: string[] = [];
+  if (data.vitals.temperatureC)
+    vitalsParts.push(`${mm.referral.temperature}: ${data.vitals.temperatureC}°C`);
+  if (data.vitals.heartRate)
+    vitalsParts.push(`${mm.referral.heartRate}: ${data.vitals.heartRate}`);
   if (data.vitals.systolicBp)
     vitalsParts.push(`${mm.referral.systolicBp}: ${data.vitals.systolicBp}`);
   if (data.vitals.spo2) vitalsParts.push(`${mm.referral.spo2}: ${data.vitals.spo2}%`);

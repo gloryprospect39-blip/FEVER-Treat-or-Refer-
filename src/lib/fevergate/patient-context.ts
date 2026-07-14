@@ -15,6 +15,8 @@ export function buildPatientContext(input: {
   feverDurationDays: number;
   selectedTiles: Record<string, boolean>;
   comorbidities?: Comorbidity[];
+  temperatureC?: number | null;
+  heartRate?: number | null;
   systolicBp?: number | null;
   spo2Percent?: number | null;
   respiratoryRate?: number | null;
@@ -37,9 +39,15 @@ export function buildPatientContext(input: {
     }
   }
 
+  const temperatureC = input.temperatureC ?? null;
+  let hasFever = input.hasFever;
+  if (temperatureC != null) {
+    hasFever = temperatureC >= 38.0;
+  }
+
   return {
     age_months: AGE_BANDS[input.ageBand] ?? 24,
-    has_fever: input.hasFever,
+    has_fever: hasFever,
     fever_duration_days: input.feverDurationDays,
     consciousness,
     toxic_appearance: false,
@@ -49,6 +57,8 @@ export function buildPatientContext(input: {
     ),
     danger_signs: dangerSigns,
     vitals: {
+      temperature_c: temperatureC,
+      heart_rate: input.heartRate ?? null,
       systolic_bp: input.systolicBp ?? null,
       spo2_percent: input.spo2Percent ?? null,
       respiratory_rate: input.respiratoryRate ?? null,
