@@ -56,8 +56,9 @@ import { CLINIC_VILLAGES } from "@/lib/fevergate/villages";
 import {
   EMPTY_VITAL_SELECTIONS,
   resolveVitalsFromCategories,
-  VITAL_CATEGORIES,
-  type VitalCategory,
+  sanitizeVitalSelections,
+  vitalOptionsFor,
+  vitalSelectionLabels,
   type VitalCategorySelection,
   type VitalKey,
 } from "@/lib/fevergate/vitals-categories";
@@ -179,6 +180,11 @@ export function TriageApp() {
     }
   }, [pathway, ageBand]);
 
+  useEffect(() => {
+    const ageMonths = AGE_BANDS[ageBand] ?? 24;
+    setVitalSelections((prev) => sanitizeVitalSelections(prev, ageMonths));
+  }, [ageBand]);
+
   const toggleComorbidity = (c: Comorbidity) => {
     setComorbidities((prev) =>
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
@@ -189,29 +195,25 @@ export function TriageApp() {
     setDangerTiles((prev) => ({ ...prev, [code]: !prev[code] }));
   };
 
-  const setVitalCategory = (key: VitalKey, value: VitalCategory | "") => {
+  const setVitalCategory = (key: VitalKey, value: string) => {
     setVitalSelections((prev) => ({ ...prev, [key]: value }));
   };
 
-  const resolvedVitals = resolveVitalsFromCategories(
-    vitalSelections,
-    AGE_BANDS[ageBand] ?? 24,
-  );
+  const ageMonths = AGE_BANDS[ageBand] ?? 24;
+  const resolvedVitals = resolveVitalsFromCategories(vitalSelections, ageMonths);
 
   const renderVitalSelect = (key: VitalKey) => (
     <label key={key} className="block">
       <span className="text-xs text-slate-500">{VITAL_FIELD_LABELS[key]}</span>
       <select
         value={vitalSelections[key]}
-        onChange={(e) =>
-          setVitalCategory(key, e.target.value as VitalCategory | "")
-        }
+        onChange={(e) => setVitalCategory(key, e.target.value)}
         className={VITAL_SELECT_CLASS}
       >
         <option value="">{mm.vitals.selectCategory}</option>
-        {VITAL_CATEGORIES.map((category) => (
-          <option key={category} value={category}>
-            {mm.vitals.categories[category]}
+        {vitalOptionsFor(key, ageMonths).map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -427,6 +429,9 @@ export function TriageApp() {
         temperatureC: resolvedVitals.temperatureC ?? 0,
         heartRate: resolvedVitals.heartRate ?? 0,
       },
+      vitalClinicalLabels: Object.values(
+        vitalSelectionLabels(vitalSelections, ageMonths),
+      ),
       dangerSignLabels: dangerSignTilesForPathway(pathway)
         .filter((t) => dangerTiles[t.triggerCode])
         .map((t) => t.label),
