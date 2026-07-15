@@ -214,11 +214,14 @@ export function TriageApp() {
     setVitalSelections((prev) => sanitizeVitalSelections(prev, ageMonths));
   }, [ageBand]);
 
-  const loadPatientHistory = async (patientId: string) => {
+  const loadPatientHistory = async (patient: RegisteredPatient) => {
     try {
-      const res = await fetch(
-        `/api/patients/history?patientId=${encodeURIComponent(patientId)}`,
-      );
+      const params = new URLSearchParams({
+        patientId: patient.id,
+        name: patient.name,
+        village: patient.village,
+      });
+      const res = await fetch(`/api/patients/history?${params.toString()}`);
       if (!res.ok) {
         setPriorEncounters([]);
         return;
@@ -255,7 +258,7 @@ export function TriageApp() {
     setRegisteredPatient(patient);
     setPatientName(patient.name);
     setVillage(patient.village);
-    void loadPatientHistory(patient.id);
+    void loadPatientHistory(patient);
   };
 
   const resolveRegisteredPatient = async (): Promise<RegisteredPatient | null> => {
@@ -433,7 +436,7 @@ export function TriageApp() {
       if (linkedPatient) {
         setRegisteredPatient(linkedPatient);
         setRegisteredPatientId(linkedPatient.id);
-        void loadPatientHistory(linkedPatient.id);
+        void loadPatientHistory(linkedPatient);
       }
       const stockNeeded = needsStockPrompt(ctx, assessment, endemicity);
       const drugsNeeded = stockDrugsNeeded(ctx, assessment, endemicity);
@@ -792,6 +795,11 @@ export function TriageApp() {
                   </option>
                 ))}
               </select>
+              {returningPatients.length === 0 && (
+                <p className="mt-1 text-xs text-slate-500">
+                  {mm.patient.returningPatientEmpty}
+                </p>
+              )}
             </label>
           )}
           <label className="block">

@@ -68,6 +68,8 @@ export const mm = {
     returningPatient: "ပြန်လည် လာရောက် လူနာ",
     returningPatientNew: "— လူနာအသစ် —",
     returningPatientSelect: "ယခင်လူနာ ရွေးချယ်ပါ",
+    returningPatientEmpty:
+      "ဤကျေးရွာတွင် ယခင်လူနာ မှတ်တမ်း မရှိသေးပါ — အမည် ထည့်ပြီး စစ်ဆေးပါက နောက်တစ်ကြိမ် ဤနေရာတွင် ပေါ်လာပါမည်။",
     visitTrace: (count: number, lastSeen: string) =>
       `Visit #${count} · last seen ${lastSeen}`,
     priorVisits: "ယခင်စစ်ဆေးမှု မှတ်တမ်း",
