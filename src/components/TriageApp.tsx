@@ -35,6 +35,7 @@ import { comorbidityOptionsForBand, optionsBySystem } from "@/lib/fevergate/como
 import { buildPatientContext } from "@/lib/fevergate/patient-context";
 import {
   ADULT_AGE_BANDS,
+  AGE_BANDS,
   CHILD_AGE_BANDS,
   PATHWAY_ADULT,
   PATHWAY_CHILD,
@@ -52,6 +53,14 @@ import {
   type TreatmentPlan,
 } from "@/lib/fevergate/treatment-plan";
 import { CLINIC_VILLAGES } from "@/lib/fevergate/villages";
+import {
+  EMPTY_VITAL_SELECTIONS,
+  resolveVitalsFromCategories,
+  VITAL_CATEGORIES,
+  type VitalCategory,
+  type VitalCategorySelection,
+  type VitalKey,
+} from "@/lib/fevergate/vitals-categories";
 import {
   drugsToLogForPatient,
   type PatientDrugDispensing,
@@ -119,6 +128,17 @@ function normalizeFeverDaysInput(raw: string): string {
   return String(parseInt(digits, 10));
 }
 
+const VITAL_FIELD_LABELS: Record<VitalKey, string> = {
+  temperature_c: mm.vitals.temperature,
+  heart_rate: mm.vitals.heartRate,
+  systolic_bp: mm.vitals.systolicBp,
+  spo2_percent: mm.vitals.spo2,
+  respiratory_rate: mm.vitals.respiratoryRate,
+};
+
+const VITAL_SELECT_CLASS =
+  "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm";
+
 export function TriageApp() {
   const [result, setResult] = useState<SessionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -136,11 +156,8 @@ export function TriageApp() {
 
   const [hasFever, setHasFever] = useState(true);
   const [feverDays, setFeverDays] = useState("1");
-  const [systolicBp, setSystolicBp] = useState(0);
-  const [spo2, setSpo2] = useState(0);
-  const [respiratoryRate, setRespiratoryRate] = useState(0);
-  const [temperatureC, setTemperatureC] = useState(0);
-  const [heartRate, setHeartRate] = useState(0);
+  const [vitalSelections, setVitalSelections] =
+    useState<VitalCategorySelection>(EMPTY_VITAL_SELECTIONS);
   const [showVitals, setShowVitals] = useState(false);
 
   const [dangerTiles, setDangerTiles] = useState<Record<string, boolean>>({});
@@ -171,6 +188,35 @@ export function TriageApp() {
   const toggleDanger = (code: string) => {
     setDangerTiles((prev) => ({ ...prev, [code]: !prev[code] }));
   };
+
+  const setVitalCategory = (key: VitalKey, value: VitalCategory | "") => {
+    setVitalSelections((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const resolvedVitals = resolveVitalsFromCategories(
+    vitalSelections,
+    AGE_BANDS[ageBand] ?? 24,
+  );
+
+  const renderVitalSelect = (key: VitalKey) => (
+    <label key={key} className="block">
+      <span className="text-xs text-slate-500">{VITAL_FIELD_LABELS[key]}</span>
+      <select
+        value={vitalSelections[key]}
+        onChange={(e) =>
+          setVitalCategory(key, e.target.value as VitalCategory | "")
+        }
+        className={VITAL_SELECT_CLASS}
+      >
+        <option value="">{mm.vitals.selectCategory}</option>
+        {VITAL_CATEGORIES.map((category) => (
+          <option key={category} value={category}>
+            {mm.vitals.categories[category]}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 
   const clinicContextForStock = (stock: SessionStock): ClinicContext =>
     buildClinicWithStock(endemicity, stock);
@@ -278,11 +324,11 @@ export function TriageApp() {
         feverDurationDays: clampFeverDays(feverDays),
         selectedTiles: dangerTiles,
         comorbidities,
-        systolicBp: systolicBp || null,
-        spo2Percent: spo2 || null,
-        respiratoryRate: respiratoryRate || null,
-        temperatureC: temperatureC || null,
-        heartRate: heartRate || null,
+        systolicBp: resolvedVitals.systolicBp,
+        spo2Percent: resolvedVitals.spo2Percent,
+        respiratoryRate: resolvedVitals.respiratoryRate,
+        temperatureC: resolvedVitals.temperatureC,
+        heartRate: resolvedVitals.heartRate,
       });
       const assessment = evaluateFebrilePatient(ctx);
       const stockNeeded = needsStockPrompt(ctx, assessment, endemicity);
@@ -375,11 +421,11 @@ export function TriageApp() {
       hasFever,
       feverDays: clampFeverDays(feverDays),
       vitals: {
-        systolicBp,
-        spo2,
-        respiratoryRate,
-        temperatureC,
-        heartRate,
+        systolicBp: resolvedVitals.systolicBp ?? 0,
+        spo2: resolvedVitals.spo2Percent ?? 0,
+        respiratoryRate: resolvedVitals.respiratoryRate ?? 0,
+        temperatureC: resolvedVitals.temperatureC ?? 0,
+        heartRate: resolvedVitals.heartRate ?? 0,
       },
       dangerSignLabels: dangerSignTilesForPathway(pathway)
         .filter((t) => dangerTiles[t.triggerCode])
@@ -762,75 +808,23 @@ export function TriageApp() {
                   {mm.vitals.coreGroup}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="text-xs text-slate-500">{mm.vitals.temperature}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={45}
-                      step={0.1}
-                      value={temperatureC || ""}
-                      onChange={(e) =>
-                        setTemperatureC(Number(e.target.value) || 0)
-                      }
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-xs text-slate-500">{mm.vitals.heartRate}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={heartRate || ""}
-                      onChange={(e) => setHeartRate(Number(e.target.value) || 0)}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                    />
-                  </label>
+                  {renderVitalSelect("temperature_c")}
+                  {renderVitalSelect("heart_rate")}
                 </div>
               </div>
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   {mm.vitals.circulationGroup}
                 </p>
-                <label className="block">
-                  <span className="text-xs text-slate-500">{mm.vitals.systolicBp}</span>
-                  <input
-                    type="number"
-                    min={0}
-                    value={systolicBp || ""}
-                    onChange={(e) => setSystolicBp(Number(e.target.value) || 0)}
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                  />
-                </label>
+                {renderVitalSelect("systolic_bp")}
               </div>
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   {mm.vitals.respiratoryGroup}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="text-xs text-slate-500">{mm.vitals.spo2}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={spo2 || ""}
-                      onChange={(e) => setSpo2(Number(e.target.value) || 0)}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-xs text-slate-500">{mm.vitals.respiratoryRate}</span>
-                    <input
-                      type="number"
-                      min={0}
-                      value={respiratoryRate || ""}
-                      onChange={(e) =>
-                        setRespiratoryRate(Number(e.target.value) || 0)
-                      }
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                    />
-                  </label>
+                  {renderVitalSelect("spo2_percent")}
+                  {renderVitalSelect("respiratory_rate")}
                 </div>
               </div>
             </div>
