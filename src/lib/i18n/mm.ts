@@ -65,6 +65,16 @@ export const mm = {
     clinician: "ကျန်းမာရေး ဝန်ထမ်း အမည်",
     clinicianPlaceholder: "ဝန်ထမ်း အမည်",
     unnamed: "အမည်မဖော်",
+    returningPatient: "ပြန်လည် လာရောက် လူနာ",
+    returningPatientNew: "— လူနာအသစ် —",
+    returningPatientSelect: "ယခင်လူနာ ရွေးချယ်ပါ",
+    visitTrace: (count: number, lastSeen: string) =>
+      `Visit #${count} · last seen ${lastSeen}`,
+    priorVisits: "ယခင်စစ်ဆေးမှု မှတ်တမ်း",
+    priorVisitsEmpty: "ယခင်မှတ်တမ်း မရှိသေးပါ",
+    visitCaption: (name: string, village: string, count: number) =>
+      `${name} · ${village} (visit #${count})`,
+    catchmentOnly: (village: string) => `Catchment: ${village}`,
   },
 
   fever: {

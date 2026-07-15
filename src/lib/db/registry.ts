@@ -3,16 +3,12 @@ import "server-only";
 import { randomUUID } from "crypto";
 
 import { getSql } from "./client";
+import type {
+  PatientEncounterSummary,
+  RegisteredPatient,
+} from "@/lib/fevergate/registry-types";
 
-export interface RegisteredPatient {
-  id: string;
-  name: string;
-  village: string;
-  created_at: string;
-  last_seen_at: string;
-  visit_count: number;
-  display_label: string;
-}
+export type { PatientEncounterSummary, RegisteredPatient } from "@/lib/fevergate/registry-types";
 
 interface PatientRow {
   id: string;
@@ -132,4 +128,35 @@ export async function resolvePatientForEncounter(input: {
   const nVillage = normalize(input.village);
   if (nName && nVillage) return registerPatient(nName, nVillage);
   return null;
+}
+
+export async function getPatientById(
+  patientId: string,
+): Promise<RegisteredPatient | null> {
+  const sql = await getSql();
+  if (!sql) return null;
+  const rows = (await sql`
+    SELECT id, name, village, created_at::text, last_seen_at::text, visit_count
+    FROM patients WHERE id = ${patientId} LIMIT 1
+  `) as PatientRow[];
+  return rows[0] ? rowToPatient(rows[0]) : null;
+}
+
+export async function listEncountersForPatient(
+  patientId: string,
+  limit = 8,
+): Promise<PatientEncounterSummary[]> {
+  const sql = await getSql();
+  if (!sql) return [];
+  const rows = (await sql`
+    SELECT data FROM encounters
+    WHERE patient_id = ${patientId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `) as { data: { timestamp?: string; assessment?: { decision?: string }; action_taken?: string | null } }[];
+  return rows.map((row) => ({
+    timestamp: row.data.timestamp ?? "",
+    decision: row.data.assessment?.decision ?? "UNKNOWN",
+    action_taken: row.data.action_taken ?? null,
+  }));
 }

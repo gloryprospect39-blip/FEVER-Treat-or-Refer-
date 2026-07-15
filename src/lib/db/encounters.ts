@@ -14,6 +14,7 @@ export interface EncounterRow {
   patient_name?: string | null;
   village?: string | null;
   clinician?: string | null;
+  patient_id?: string | null;
   drug_dispensing?: PatientDrugDispensing | null;
 }
 
@@ -25,6 +26,7 @@ export async function logEncounter(input: {
   patientName?: string | null;
   village?: string | null;
   clinician?: string | null;
+  patientId?: string | null;
   drugDispensing?: PatientDrugDispensing | null;
 }): Promise<void> {
   const row: EncounterRow = {
@@ -36,6 +38,7 @@ export async function logEncounter(input: {
     patient_name: input.patientName ?? null,
     village: input.village ?? null,
     clinician: input.clinician ?? null,
+    patient_id: input.patientId ?? null,
     drug_dispensing: input.drugDispensing ?? null,
   };
 
@@ -46,13 +49,14 @@ export async function logEncounter(input: {
     if (!sql) return;
     await sql`
       INSERT INTO encounters
-        (created_at, patient_name, village, clinician, action_taken, data)
+        (created_at, patient_name, village, clinician, action_taken, patient_id, data)
       VALUES (
         ${row.timestamp},
         ${row.patient_name},
         ${row.village},
         ${row.clinician},
         ${row.action_taken},
+        ${row.patient_id},
         ${JSON.stringify(row)}::jsonb
       )
     `;
