@@ -20,6 +20,7 @@ export interface ReferralData {
     temperatureC: number;
     heartRate: number;
   };
+  vitalClinicalLabels?: string[];
   dangerSignLabels: string[];
   comorbidityLabels: string[];
   decisionLabel: string;
@@ -50,18 +51,23 @@ export function ReferralForm({
   onPrint?: () => void;
 }) {
   const dateStr = new Date().toLocaleString("en-GB");
-  const vitalsParts: string[] = [];
-  if (data.vitals.temperatureC)
-    vitalsParts.push(`${mm.referral.temperature}: ${data.vitals.temperatureC}°C`);
-  if (data.vitals.heartRate)
-    vitalsParts.push(`${mm.referral.heartRate}: ${data.vitals.heartRate}`);
-  if (data.vitals.systolicBp)
-    vitalsParts.push(`${mm.referral.systolicBp}: ${data.vitals.systolicBp}`);
-  if (data.vitals.spo2) vitalsParts.push(`${mm.referral.spo2}: ${data.vitals.spo2}%`);
-  if (data.vitals.respiratoryRate)
-    vitalsParts.push(
-      `${mm.referral.respiratoryRate}: ${data.vitals.respiratoryRate}`,
-    );
+  const vitalsParts: string[] =
+    data.vitalClinicalLabels && data.vitalClinicalLabels.length > 0
+      ? [...data.vitalClinicalLabels]
+      : [];
+  if (vitalsParts.length === 0) {
+    if (data.vitals.temperatureC)
+      vitalsParts.push(`${mm.referral.temperature}: ${data.vitals.temperatureC}°C`);
+    if (data.vitals.heartRate)
+      vitalsParts.push(`${mm.referral.heartRate}: ${data.vitals.heartRate}`);
+    if (data.vitals.systolicBp)
+      vitalsParts.push(`${mm.referral.systolicBp}: ${data.vitals.systolicBp}`);
+    if (data.vitals.spo2) vitalsParts.push(`${mm.referral.spo2}: ${data.vitals.spo2}%`);
+    if (data.vitals.respiratoryRate)
+      vitalsParts.push(
+        `${mm.referral.respiratoryRate}: ${data.vitals.respiratoryRate}`,
+      );
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-sm">

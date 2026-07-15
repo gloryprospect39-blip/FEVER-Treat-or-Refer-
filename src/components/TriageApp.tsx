@@ -56,8 +56,9 @@ import { CLINIC_VILLAGES } from "@/lib/fevergate/villages";
 import {
   EMPTY_VITAL_SELECTIONS,
   resolveVitalsFromCategories,
-  VITAL_CATEGORIES,
-  type VitalCategory,
+  sanitizeVitalSelections,
+  vitalOptionsFor,
+  vitalSelectionLabels,
   type VitalCategorySelection,
   type VitalKey,
 } from "@/lib/fevergate/vitals-categories";
@@ -66,6 +67,10 @@ import {
   type PatientDrugDispensing,
 } from "@/lib/fevergate/drug-dispensing";
 import { logActivityClient } from "@/lib/fevergate/log-activity";
+import type {
+  PatientEncounterSummary,
+  RegisteredPatient,
+} from "@/lib/fevergate/registry-types";
 import {
   buildClinicWithStock,
   needsStockPrompt,
@@ -81,6 +86,7 @@ interface SessionResult {
   patientContext: PatientContext;
   treatmentPlan: TreatmentPlan;
   clinic: ClinicContext;
+  registeredPatient?: RegisteredPatient | null;
 }
 
 type PendingTreatAction =
@@ -139,6 +145,21 @@ const VITAL_FIELD_LABELS: Record<VitalKey, string> = {
 const VITAL_SELECT_CLASS =
   "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm";
 
+function formatVisitDate(iso: string): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function priorDecisionLabel(decision: string): string {
+  if (decision === "REFER" || decision === "REFER_IMMEDIATE") return mm.result.refer;
+  if (decision === "TREAT_AND_MONITOR") return mm.result.treatAndMonitor;
+  return mm.result.treat;
+}
+
 export function TriageApp() {
   const [result, setResult] = useState<SessionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -148,6 +169,15 @@ export function TriageApp() {
   const [patientName, setPatientName] = useState("");
   const [village, setVillage] = useState("");
   const [clinicianName, setClinicianName] = useState("");
+  const [registeredPatientId, setRegisteredPatientId] = useState("");
+  const [registeredPatient, setRegisteredPatient] =
+    useState<RegisteredPatient | null>(null);
+  const [returningPatients, setReturningPatients] = useState<RegisteredPatient[]>(
+    [],
+  );
+  const [priorEncounters, setPriorEncounters] = useState<PatientEncounterSummary[]>(
+    [],
+  );
 
   const [pathway, setPathway] = useState<string>(PATHWAY_CHILD);
   const [ageBand, setAgeBand] = useState<string>(
@@ -179,6 +209,77 @@ export function TriageApp() {
     }
   }, [pathway, ageBand]);
 
+  useEffect(() => {
+    const ageMonths = AGE_BANDS[ageBand] ?? 24;
+    setVitalSelections((prev) => sanitizeVitalSelections(prev, ageMonths));
+  }, [ageBand]);
+
+  const loadPatientHistory = async (patientId: string) => {
+    try {
+      const res = await fetch(
+        `/api/patients/history?patientId=${encodeURIComponent(patientId)}`,
+      );
+      if (!res.ok) {
+        setPriorEncounters([]);
+        return;
+      }
+      const data = (await res.json()) as { encounters?: PatientEncounterSummary[] };
+      setPriorEncounters(data.encounters ?? []);
+    } catch {
+      setPriorEncounters([]);
+    }
+  };
+
+  useEffect(() => {
+    if (!village) {
+      setReturningPatients([]);
+      return;
+    }
+    void fetch(`/api/patients?village=${encodeURIComponent(village)}`)
+      .then((res) => (res.ok ? res.json() : { patients: [] }))
+      .then((data: { patients?: RegisteredPatient[] }) => {
+        setReturningPatients(data.patients ?? []);
+      })
+      .catch(() => setReturningPatients([]));
+  }, [village]);
+
+  const selectReturningPatient = (patientId: string) => {
+    setRegisteredPatientId(patientId);
+    if (!patientId) {
+      setRegisteredPatient(null);
+      setPriorEncounters([]);
+      return;
+    }
+    const patient = returningPatients.find((row) => row.id === patientId);
+    if (!patient) return;
+    setRegisteredPatient(patient);
+    setPatientName(patient.name);
+    setVillage(patient.village);
+    void loadPatientHistory(patient.id);
+  };
+
+  const resolveRegisteredPatient = async (): Promise<RegisteredPatient | null> => {
+    const name = patientName.trim();
+    const villageCode = village.trim();
+    if (!name || !villageCode) return null;
+    try {
+      const res = await fetch("/api/patients/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          village: villageCode,
+          patientId: registeredPatientId || null,
+        }),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as { patient?: RegisteredPatient | null };
+      return data.patient ?? null;
+    } catch {
+      return null;
+    }
+  };
+
   const toggleComorbidity = (c: Comorbidity) => {
     setComorbidities((prev) =>
       prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c],
@@ -189,29 +290,25 @@ export function TriageApp() {
     setDangerTiles((prev) => ({ ...prev, [code]: !prev[code] }));
   };
 
-  const setVitalCategory = (key: VitalKey, value: VitalCategory | "") => {
+  const setVitalCategory = (key: VitalKey, value: string) => {
     setVitalSelections((prev) => ({ ...prev, [key]: value }));
   };
 
-  const resolvedVitals = resolveVitalsFromCategories(
-    vitalSelections,
-    AGE_BANDS[ageBand] ?? 24,
-  );
+  const ageMonths = AGE_BANDS[ageBand] ?? 24;
+  const resolvedVitals = resolveVitalsFromCategories(vitalSelections, ageMonths);
 
   const renderVitalSelect = (key: VitalKey) => (
     <label key={key} className="block">
       <span className="text-xs text-slate-500">{VITAL_FIELD_LABELS[key]}</span>
       <select
         value={vitalSelections[key]}
-        onChange={(e) =>
-          setVitalCategory(key, e.target.value as VitalCategory | "")
-        }
+        onChange={(e) => setVitalCategory(key, e.target.value)}
         className={VITAL_SELECT_CLASS}
       >
         <option value="">{mm.vitals.selectCategory}</option>
-        {VITAL_CATEGORIES.map((category) => (
-          <option key={category} value={category}>
-            {mm.vitals.categories[category]}
+        {vitalOptionsFor(key, ageMonths).map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -259,6 +356,7 @@ export function TriageApp() {
         patientName: patientName.trim() || null,
         village: village.trim() || null,
         clinician: clinicianName.trim() || null,
+        patientId: session.registeredPatient?.id ?? (registeredPatientId || null),
       }),
     });
   };
@@ -314,7 +412,7 @@ export function TriageApp() {
     void executeTreatAction(pendingTreatAction, dispensing);
   };
 
-  const handleAssess = () => {
+  const handleAssess = async () => {
     setError(null);
     try {
       const ctx = buildPatientContext({
@@ -331,6 +429,12 @@ export function TriageApp() {
         heartRate: resolvedVitals.heartRate,
       });
       const assessment = evaluateFebrilePatient(ctx);
+      const linkedPatient = await resolveRegisteredPatient();
+      if (linkedPatient) {
+        setRegisteredPatient(linkedPatient);
+        setRegisteredPatientId(linkedPatient.id);
+        void loadPatientHistory(linkedPatient.id);
+      }
       const stockNeeded = needsStockPrompt(ctx, assessment, endemicity);
       const drugsNeeded = stockDrugsNeeded(ctx, assessment, endemicity);
       const stock = sessionStock
@@ -345,6 +449,7 @@ export function TriageApp() {
         patientContext: ctx,
         treatmentPlan,
         clinic,
+        registeredPatient: linkedPatient,
       });
       setActionNote(null);
       logActivityClient({
@@ -371,6 +476,10 @@ export function TriageApp() {
     setComorbidities([]);
     setPatientName("");
     setVillage("");
+    setRegisteredPatientId("");
+    setRegisteredPatient(null);
+    setReturningPatients([]);
+    setPriorEncounters([]);
   };
 
   const handleNewPatient = async (action: string) => {
@@ -389,7 +498,8 @@ export function TriageApp() {
   };
 
   if (result) {
-    const { assessment, treatmentPlan, patientContext } = result;
+    const { assessment, treatmentPlan, patientContext, registeredPatient: linked } =
+      result;
     const style = CARD_STYLES[assessment.decision];
     const isRefer =
       assessment.decision === "REFER" ||
@@ -427,6 +537,9 @@ export function TriageApp() {
         temperatureC: resolvedVitals.temperatureC ?? 0,
         heartRate: resolvedVitals.heartRate ?? 0,
       },
+      vitalClinicalLabels: Object.values(
+        vitalSelectionLabels(vitalSelections, ageMonths),
+      ),
       dangerSignLabels: dangerSignTilesForPathway(pathway)
         .filter((t) => dangerTiles[t.triggerCode])
         .map((t) => t.label),
@@ -448,6 +561,17 @@ export function TriageApp() {
         <div
           className={`rounded-3xl bg-gradient-to-br ${style.bg} p-8 text-white shadow-xl shadow-slate-300/40`}
         >
+          {(linked || village.trim()) && (
+            <p className="mb-2 text-sm font-medium opacity-90">
+              {linked
+                ? mm.patient.visitCaption(
+                    linked.name,
+                    linked.village,
+                    linked.visit_count,
+                  )
+                : mm.patient.catchmentOnly(village.trim())}
+            </p>
+          )}
           <p className="text-sm font-medium uppercase tracking-widest opacity-80">
             {mm.result.triageDecision}
           </p>
@@ -631,21 +755,16 @@ export function TriageApp() {
 
       <SectionCard title={mm.patient.title} icon={<User className="h-5 w-5" />}>
         <div className="grid gap-3 sm:grid-cols-3">
-          <label className="block">
-            <span className="text-xs text-slate-500">{mm.patient.name}</span>
-            <input
-              type="text"
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              placeholder={mm.patient.namePlaceholder}
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block">
+          <label className="block sm:col-span-3">
             <span className="text-xs text-slate-500">{mm.patient.village}</span>
             <select
               value={village}
-              onChange={(e) => setVillage(e.target.value)}
+              onChange={(e) => {
+                setVillage(e.target.value);
+                setRegisteredPatientId("");
+                setRegisteredPatient(null);
+                setPriorEncounters([]);
+              }}
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
             >
               <option value="">{mm.patient.villageSelect}</option>
@@ -656,7 +775,41 @@ export function TriageApp() {
               ))}
             </select>
           </label>
+          {village && (
+            <label className="block sm:col-span-3">
+              <span className="text-xs text-slate-500">
+                {mm.patient.returningPatient}
+              </span>
+              <select
+                value={registeredPatientId}
+                onChange={(e) => selectReturningPatient(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"
+              >
+                <option value="">{mm.patient.returningPatientNew}</option>
+                {returningPatients.map((patient) => (
+                  <option key={patient.id} value={patient.id}>
+                    {patient.display_label} · visit #{patient.visit_count}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="block">
+            <span className="text-xs text-slate-500">{mm.patient.name}</span>
+            <input
+              type="text"
+              value={patientName}
+              onChange={(e) => {
+                setPatientName(e.target.value);
+                setRegisteredPatientId("");
+                setRegisteredPatient(null);
+                setPriorEncounters([]);
+              }}
+              placeholder={mm.patient.namePlaceholder}
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block sm:col-span-2">
             <span className="text-xs text-slate-500">{mm.patient.clinician}</span>
             <input
               type="text"
@@ -666,6 +819,40 @@ export function TriageApp() {
               className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
             />
           </label>
+          {registeredPatient && (
+            <div className="sm:col-span-3 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-900">
+              {mm.patient.visitTrace(
+                registeredPatient.visit_count,
+                formatVisitDate(registeredPatient.last_seen_at),
+              )}
+            </div>
+          )}
+          {registeredPatient && (
+            <div className="sm:col-span-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {mm.patient.priorVisits}
+              </p>
+              {priorEncounters.length === 0 ? (
+                <p className="text-sm text-slate-500">{mm.patient.priorVisitsEmpty}</p>
+              ) : (
+                <ul className="space-y-1.5 text-sm text-slate-700">
+                  {priorEncounters.map((row, index) => (
+                    <li
+                      key={`${row.timestamp}-${index}`}
+                      className="flex flex-wrap items-baseline justify-between gap-2 border-b border-slate-200/80 pb-1.5 last:border-0 last:pb-0"
+                    >
+                      <span className="tabular-nums text-slate-500">
+                        {formatVisitDate(row.timestamp)}
+                      </span>
+                      <span className="font-medium text-slate-900">
+                        {priorDecisionLabel(row.decision)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </SectionCard>
 

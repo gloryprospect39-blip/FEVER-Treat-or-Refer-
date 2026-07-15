@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       patientName: body.patientName ?? null,
       village: body.village ?? null,
       clinician: body.clinician ?? null,
+      patientId: body.patientId ?? null,
       drugDispensing: body.drugDispensing ?? null,
     });
     return NextResponse.json({ ok: true });

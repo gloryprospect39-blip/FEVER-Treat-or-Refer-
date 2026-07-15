@@ -65,6 +65,16 @@ export const mm = {
     clinician: "ကျန်းမာရေး ဝန်ထမ်း အမည်",
     clinicianPlaceholder: "ဝန်ထမ်း အမည်",
     unnamed: "အမည်မဖော်",
+    returningPatient: "ပြန်လည် လာရောက် လူနာ",
+    returningPatientNew: "— လူနာအသစ် —",
+    returningPatientSelect: "ယခင်လူနာ ရွေးချယ်ပါ",
+    visitTrace: (count: number, lastSeen: string) =>
+      `Visit #${count} · last seen ${lastSeen}`,
+    priorVisits: "ယခင်စစ်ဆေးမှု မှတ်တမ်း",
+    priorVisitsEmpty: "ယခင်မှတ်တမ်း မရှိသေးပါ",
+    visitCaption: (name: string, village: string, count: number) =>
+      `${name} · ${village} (visit #${count})`,
+    catchmentOnly: (village: string) => `Catchment: ${village}`,
   },
 
   fever: {
@@ -77,14 +87,9 @@ export const mm = {
     title: "အခြေခံစမ်းသပ်မှု (မထည့်လည်းရသည်)",
     show: "အချက်အလက် ထည့်ရန်",
     hide: "အချက်အလက် ဝှက်ရန်",
-    notMeasuredHelp: "မတိုင်းတာရသေးပါက မရွေးချယ်ပါ။ ရွေးချယ်ပါက ပြင်းထန်မှု အကဲဖြတ်ချက်သို့ ချိတ်ဆက်ပါမည်။",
-    selectCategory: "ပြင်းထန်မှု ရွေးချယ်ပါ",
-    categories: {
-      normal: "ပုံမှန်",
-      mild: "အနည်းငယ် လွဲချော်",
-      moderate: "အလယ်အလတ်",
-      severe: "ပြင်းထန်",
-    },
+    notMeasuredHelp:
+      "Skip if not measured. English clinical bands below match NEWS2, qSOFA, and referral scoring.",
+    selectCategory: "Select clinical band (English)",
     coreGroup: "အခြေခံ",
     circulationGroup: "သွေးကြော",
     respiratoryGroup: "အသက်ရှု / SpO₂",
