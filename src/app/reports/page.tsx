@@ -1,8 +1,6 @@
-import { ArrowLeft, ClipboardList } from "lucide-react";
-import Link from "next/link";
-
 import { ActivityPageTracker } from "@/components/ActivityPageTracker";
 import { PrintButton } from "@/components/PrintButton";
+import { SupervisorNav } from "@/components/SupervisorNav";
 import type { TriageDecision } from "@/lib/decision-engine/models";
 import { loadEncounters, type EncounterRow } from "@/lib/db/encounters";
 import { AGE_BANDS } from "@/lib/fevergate/pathways";
@@ -330,25 +328,10 @@ export default async function ReportsPage() {
     <div className="mx-auto max-w-3xl space-y-5 px-4 py-8">
       <ActivityPageTracker eventType="view_reports" />
 
-      <div className="no-print flex items-center justify-between gap-2">
-        <Link
-          href="/"
-          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          {mm.nav.backToTriage}
-        </Link>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/activity"
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            <ClipboardList className="h-4 w-4" />
-            {mm.nav.activity}
-          </Link>
-          <PrintButton label={mm.report.print} />
-        </div>
-      </div>
+      <SupervisorNav
+        current="reports"
+        trailing={<PrintButton label={mm.report.print} />}
+      />
 
       <div id="printable" className="space-y-5">
         <header>
