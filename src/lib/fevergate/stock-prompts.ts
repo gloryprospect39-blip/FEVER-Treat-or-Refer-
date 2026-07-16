@@ -7,6 +7,9 @@ import type { ClinicContext, MalariaEndemicity } from "./treatment-plan";
 
 export type StockDrug = "act" | "paracetamol";
 
+/** Drugs recorded once per shift in clinic settings (baseline in-stock). */
+export const SESSION_STOCK_DRUGS: StockDrug[] = ["act", "paracetamol"];
+
 export interface SessionStock {
   act: boolean;
   paracetamol: boolean;
