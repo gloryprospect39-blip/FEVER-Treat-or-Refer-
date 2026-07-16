@@ -68,6 +68,8 @@ export const mm = {
     returningPatient: "ပြန်လည် လာရောက် လူနာ",
     returningPatientNew: "— လူနာအသစ် —",
     returningPatientSelect: "ယခင်လူနာ ရွေးချယ်ပါ",
+    returningPatientEmpty:
+      "ဤကျေးရွာတွင် ယခင်လူနာ မှတ်တမ်း မရှိသေးပါ — အမည် ထည့်ပြီး စစ်ဆေးပါက နောက်တစ်ကြိမ် ဤနေရာတွင် ပေါ်လာပါမည်။",
     visitTrace: (count: number, lastSeen: string) =>
       `Visit #${count} · last seen ${lastSeen}`,
     priorVisits: "ယခင်စစ်ဆေးမှု မှတ်တမ်း",
@@ -165,8 +167,23 @@ export const mm = {
   nav: {
     reports: "အစီရင်ခံစာများ",
     activity: "လုပ်ဆောင်ချက် မှတ်တမ်း",
+    supervisor: "ကြီးကြပ်သူ ပြင်ဆင်",
     triage: "လူနာ စစ်ဆေးရန်",
     backToTriage: "စစ်ဆေးမှုသို့ ပြန်သွားရန်",
+    backToSupervisor: "ကြီးကြပ်သူ ပြင်ဆင်သို့ ပြန်သွားရန်",
+  },
+
+  supervisor: {
+    title: "ကြီးကြပ်သူ ပြင်ဆင်",
+    subtitle: "နေ့စဉ် အခြေအနေ နှင့် စီမံခန့်ခွဲမှု အစီရင်ခံစာများ",
+    todayOverview: "ယနေ့ အနှစ်ချုပ်",
+    actStockOuts: "ဌက်ဖျားဆေး စတော့ မရှိ",
+    weekEncounters: (n: number) => `ဤအပတ် စစ်ဆေးမှု ${n} ခု`,
+    weekTreatments: (n: number) => `ကုသမှု လုပ်ဆောင်ချက် ${n} ခု`,
+    reportsCard:
+      "ကျေးရွာ အလိုက် စစ်ဆေးမှု၊ ဆုံးဖြတ်ချက် နှင့် ဆေးသုံးစွဲမှု အစီရင်ခံစာများ",
+    activityCard:
+      "ဝန်ထမ်း လုပ်ဆောင်ချက် မှတ်တမ်း၊ ရက်စွဲ စစ်ထုတ်ခြင်း နှင့် ထုတ်ယူမှု",
   },
 
   activity: {

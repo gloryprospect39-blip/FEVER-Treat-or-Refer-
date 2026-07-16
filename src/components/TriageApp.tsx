@@ -2,10 +2,9 @@
 
 import {
   ArrowLeft,
-  BarChart3,
-  ClipboardList,
   Calendar,
   FileText,
+  LayoutDashboard,
   Phone,
   Stethoscope,
   Thermometer,
@@ -214,11 +213,14 @@ export function TriageApp() {
     setVitalSelections((prev) => sanitizeVitalSelections(prev, ageMonths));
   }, [ageBand]);
 
-  const loadPatientHistory = async (patientId: string) => {
+  const loadPatientHistory = async (patient: RegisteredPatient) => {
     try {
-      const res = await fetch(
-        `/api/patients/history?patientId=${encodeURIComponent(patientId)}`,
-      );
+      const params = new URLSearchParams({
+        patientId: patient.id,
+        name: patient.name,
+        village: patient.village,
+      });
+      const res = await fetch(`/api/patients/history?${params.toString()}`);
       if (!res.ok) {
         setPriorEncounters([]);
         return;
@@ -255,7 +257,7 @@ export function TriageApp() {
     setRegisteredPatient(patient);
     setPatientName(patient.name);
     setVillage(patient.village);
-    void loadPatientHistory(patient.id);
+    void loadPatientHistory(patient);
   };
 
   const resolveRegisteredPatient = async (): Promise<RegisteredPatient | null> => {
@@ -433,7 +435,7 @@ export function TriageApp() {
       if (linkedPatient) {
         setRegisteredPatient(linkedPatient);
         setRegisteredPatientId(linkedPatient.id);
-        void loadPatientHistory(linkedPatient.id);
+        void loadPatientHistory(linkedPatient);
       }
       const stockNeeded = needsStockPrompt(ctx, assessment, endemicity);
       const drugsNeeded = stockDrugsNeeded(ctx, assessment, endemicity);
@@ -737,18 +739,11 @@ export function TriageApp() {
         <p className="mt-1 text-slate-500">{mm.app.tagline}</p>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
           <Link
-            href="/reports"
-            className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-4 py-1.5 text-sm font-medium text-teal-700 shadow-sm transition hover:bg-teal-50"
+            href="/supervisor"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
           >
-            <BarChart3 className="h-4 w-4" />
-            {mm.nav.reports}
-          </Link>
-          <Link
-            href="/activity"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-          >
-            <ClipboardList className="h-4 w-4" />
-            {mm.nav.activity}
+            <LayoutDashboard className="h-4 w-4" />
+            {mm.nav.supervisor}
           </Link>
         </div>
       </header>
@@ -792,6 +787,11 @@ export function TriageApp() {
                   </option>
                 ))}
               </select>
+              {returningPatients.length === 0 && (
+                <p className="mt-1 text-xs text-slate-500">
+                  {mm.patient.returningPatientEmpty}
+                </p>
+              )}
             </label>
           )}
           <label className="block">
