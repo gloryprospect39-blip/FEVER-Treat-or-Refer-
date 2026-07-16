@@ -3,6 +3,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { SupervisorNav } from "@/components/SupervisorNav";
+import {
+  ActivityPulseChart,
+  DecisionMixChart,
+  DrugDispensingChart,
+  VillageVolumeChart,
+} from "@/components/SupervisorDashboardCharts";
 import { loadActivityLogs } from "@/lib/db/activity";
 import { loadEncounters } from "@/lib/db/encounters";
 import {
@@ -15,6 +21,7 @@ import {
   startOfToday,
   startOfWeek,
   summarizeEncounters,
+  summarizeEncountersByVillage,
 } from "@/lib/fevergate/reports";
 import { mm } from "@/lib/i18n/mm";
 
@@ -77,6 +84,7 @@ export default async function SupervisorPage() {
   const weeklyRows = filterSince(encounters, startOfWeek(now));
   const dailySummary = summarizeEncounters(dailyRows);
   const weeklySummary = summarizeEncounters(weeklyRows);
+  const dailyByVillage = summarizeEncountersByVillage(dailyRows);
   const dailyDrugs = summarizeDrugDispensing(dailyRows);
   const weeklyActivity = summarizeActivity(
     filterActivitySince(activityRows, startOfWeek(now)),
@@ -127,6 +135,15 @@ export default async function SupervisorPage() {
           {mm.supervisor.weekTreatments(weeklyActivity.treatments)}
         </p>
       </section>
+
+      <DecisionMixChart daily={dailySummary} weekly={weeklySummary} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <VillageVolumeChart rows={dailyByVillage} total={dailySummary.total} />
+        <DrugDispensingChart summary={dailyDrugs} />
+      </div>
+
+      <ActivityPulseChart summary={weeklyActivity} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <HubCard
