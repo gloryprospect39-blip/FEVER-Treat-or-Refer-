@@ -12,6 +12,10 @@ export const mm = {
   clinic: {
     title: "ဆေးခန်း အခြေအနေ",
     endemicityHeading: "ဌက်ဖျားရောဂါ ဖြစ်ပွားမှု",
+    stockHeading: "ယနေ့ ဆေးခန်းတွင် ရှိ/မရှိ (တစ်ကြိမ်)",
+    stockHint: "နေ့စဉ် shift စတင်ရာတွင် ရွေးပါ — လူနာတိုင်း ပြန်မမေးရ",
+    stockIncomplete: "ACT နှင့် ပါရာစီတမော နှစ်မျိုးလုံး ရွေးပါ။",
+    stockReminder: "ဆက်တင်များ → ယနေ့ ဆေးရှိ/မရှိ ကို ရွေးပါ",
     showSettings: "ဆက်တင်များ ပြရန်",
     hideSettings: "ဆက်တင်များ ဝှက်ရန်",
     highEndemicity: "ဖြစ်ပွားမှု များသော",

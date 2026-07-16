@@ -15,6 +15,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ReferralForm, type ReferralData } from "@/components/ReferralForm";
+import {
+  ClinicStockCheckIn,
+  ClinicStockSummary,
+} from "@/components/ClinicStockCheckIn";
 import { PatientDrugPanel } from "@/components/PatientDrugPanel";
 import { SectionCard } from "@/components/SectionCard";
 import {
@@ -860,6 +864,12 @@ export function TriageApp() {
         title={mm.clinic.title}
         icon={<Thermometer className="h-5 w-5" />}
       >
+        {!showClinic && !sessionStock ? (
+          <p className="mb-2 text-xs text-amber-800">{mm.clinic.stockReminder}</p>
+        ) : null}
+        {!showClinic && sessionStock ? (
+          <ClinicStockSummary stock={sessionStock} />
+        ) : null}
         <button
           type="button"
           onClick={() => setShowClinic(!showClinic)}
@@ -890,6 +900,10 @@ export function TriageApp() {
                 </button>
               ))}
             </div>
+            <ClinicStockCheckIn
+              value={sessionStock}
+              onChange={applyStockToResult}
+            />
           </div>
         )}
       </SectionCard>
