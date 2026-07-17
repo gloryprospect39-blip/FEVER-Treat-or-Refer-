@@ -31,7 +31,10 @@ import type {
   PatientContext,
   TriageDecision,
 } from "@/lib/decision-engine/models";
-import { dangerSignTilesForPathway } from "@/lib/fevergate/danger-signs";
+import {
+  DANGER_SIGN_ICON,
+  dangerSignTilesForPathway,
+} from "@/lib/fevergate/danger-signs";
 import { comorbidityOptionsForBand, optionsBySystem } from "@/lib/fevergate/comorbidities";
 import { buildPatientContext } from "@/lib/fevergate/patient-context";
 import {
@@ -1037,7 +1040,7 @@ export function TriageApp() {
       >
         <div className="grid gap-2 sm:grid-cols-2">
           {dangerSignTilesForPathway(pathway).map((tile) => {
-            const Icon = tile.icon;
+            const Icon = DANGER_SIGN_ICON;
             return (
               <ToggleChip
                 key={`${pathway}-${tile.triggerCode}`}
