@@ -152,16 +152,16 @@ export const mm = {
   actions: {
     assess: "လူနာ စစ်ဆေးရန်",
     newPatient: "လူနာအသစ်",
-    callTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
+    callTeleconsultation: "online ကုသမှု အတွက် ချိန်းဆိုရန်",
     scheduleTeleconsultation: "onlineမှတဆင့် ဆရာဝန်ပြရန် ရက်ချိန်း စီစဥ်ပါ။",
     startTreatment: "ကုသမှု စတင်ရန်",
     treatmentAcknowledged: "ကုသမှု အစီအစဉ်ကို အတည်ပြုပြီး။",
-    dialTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
+    dialTeleconsultation: "online ကုသမှု အတွက် ချိန်းဆိုရန်",
   },
 
   result: {
     triageDecision: "စစ်ဆေးမှု ရလဒ်",
-    refer: "ပို့ဆောင်ရန်",
+    refer: "အုပ်စု (A) လူနာအား ဆေးရုံသို့ အမြန်လွှဲပြောင်းကုသရန်",
     treatAndMonitor: "အုပ်စု (B) ကုသ၍ စောင့်ကြည့်ရန်",
     treat: "ကုသရန်",
     monitorReason: (days: number) =>
@@ -325,7 +325,7 @@ export const mm = {
     elevatedQsofa: "qSOFA မြင့်မားခြင်း",
     elevatedNews2: "NEWS2 မြင့်မားခြင်း",
     elevatedSepsisScreen: "ဖျားနာရောဂါ ပြင်းထန်မှု",
-    elevatedSevereIllness: "ပြင်းထန်သော ရောဂါ လက္ခဏာ မြင့်မား",
+    elevatedSevereIllness: "ပြင်းထန်ရောဂါဖြစ်နိုင်ခြေ မြင့်မားပါသည်။",
     referImmediately: "ချက်ချင်း ပို့ဆောင်ရန်",
     referSameDay: "ယနေ့ပို့ဆောင်ရန်",
     refer: "ပို့ဆောင်ရန်",
@@ -334,7 +334,7 @@ export const mm = {
   treatment: {
     noOutpatient: "လူနာအပြင်ဘက် ကုသမှု မစတင်ရ",
     noOutpatientDetail:
-      "ပို့ဆောင်ရေး ဆေးရုံသို့ အမြန်သွားရန် စီစဉ်ပါ။ တယ်လီ အကြံပြုခန်း မတိုင်မီ ဒေသန္တရ ပရိုတိုကောလ် အရ တည်ငြိမ်အောင် ကုသပါ။",
+      "ဆေးရုံသို့ အမြန်သွားရန် စီစဉ်ပါ။ online ကုသမှု အတွက် ချိန်းဆိုရန် စီစဥ်နေစဥ် လိုအပ်သော ကုသမှုများ တပြိုင်နက် စတင်လုပ်ဆောင်ပါ။",
     actOutOfStock:
       "ဌက်ဖျားရောဂါ ယူဆကုသမှု လိုအပ်သော်လည်း ငှက်ဖျားဆေး မရှိပါ။",
     actOutOfStockDetail:
