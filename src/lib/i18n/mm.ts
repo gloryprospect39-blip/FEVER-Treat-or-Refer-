@@ -161,6 +161,7 @@ export const mm = {
 
   result: {
     triageDecision: "စစ်ဆေးမှု ရလဒ်",
+    referImmediate: "အုပ်စု (A) ချက်ချင်း ပို့ဆောင်ရန်",
     refer: "အုပ်စု (A) လူနာအား ဆေးရုံသို့ အမြန်လွှဲပြောင်းကုသရန်",
     treatAndMonitor: "အုပ်စု (B) ကုသ၍ စောင့်ကြည့်ရန်",
     treat: "ကုသရန်",
@@ -288,7 +289,7 @@ export const mm = {
     weekly: "လွန်ခဲ့သော ၇ ရက် (အပတ်စဉ်)",
     totalPatients: "လူနာ စုစုပေါင်း",
     referrals: "ပို့ဆောင်မှု",
-    referImmediate: "ချက်ချင်း ပို့ဆောင်",
+    referImmediate: "အုပ်စု (A) ချက်ချင်း ပို့ဆောင်ရန်",
     treatMonitor: "အုပ်စု (B) ကုသ၍ စောင့်ကြည့်ရန်",
     treat: "ကုသရန်",
     children: "ကလေး",
