@@ -153,7 +153,7 @@ export const mm = {
     assess: "လူနာ စစ်ဆေးရန်",
     newPatient: "လူနာအသစ်",
     callTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
-    scheduleTeleconsultation: "တယ်လီ အကြံပြု စီစဉ်ရန်",
+    scheduleTeleconsultation: "onlineမှတဆင့် ဆရာဝန်ပြရန် ရက်ချိန်း စီစဥ်ပါ။",
     startTreatment: "ကုသမှု စတင်ရန်",
     treatmentAcknowledged: "ကုသမှု အစီအစဉ်ကို အတည်ပြုပြီး။",
     dialTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
@@ -162,7 +162,7 @@ export const mm = {
   result: {
     triageDecision: "စစ်ဆေးမှု ရလဒ်",
     refer: "ပို့ဆောင်ရန်",
-    treatAndMonitor: "ကုသ၍ စောင့်ကြည့်ရန်",
+    treatAndMonitor: "အုပ်စု (B) ကုသ၍ စောင့်ကြည့်ရန်",
     treat: "ကုသရန်",
     monitorReason: (days: number) =>
       `ယခု သောက်ရန် ဆေးပေးပီး ${days} ရက်အကြာတွင် ပြန်လာပြရပါမည်။`,
@@ -266,9 +266,9 @@ export const mm = {
     dangerSigns: "အန္တရာယ် လက္ခဏာများ",
     comorbidities: "အန္တရာယ်မြင့်စေနိုင်သော အခြေအနေများ",
     none: "မရှိ",
-    decision: "စစ်ဆေးမှု ဆုံးဖြတ်ချက်",
-    urgency: "အရေးပေါ် အဆင့်",
-    referralReasons: "ပို့ဆောင်ရသည့် အကြောင်းရင်း",
+    decision: "ဖြည့်စွက်မှုပြီးနောက် အကြံပြုချက်",
+    urgency: "အကြံပြုချက်",
+    referralReasons: "အကြံပြုရသည့် အကြောင်းရင်း",
     plan: "ကုသမှု / အကြံပြုချက်",
     teleconsult: "တယ်လီ အကြံပြုခန်း ဖုန်း",
     signature: "လက်မှတ်",
@@ -289,7 +289,7 @@ export const mm = {
     totalPatients: "လူနာ စုစုပေါင်း",
     referrals: "ပို့ဆောင်မှု",
     referImmediate: "ချက်ချင်း ပို့ဆောင်",
-    treatMonitor: "ကုသ၍ စောင့်ကြည့်ရန်",
+    treatMonitor: "အုပ်စု (B) ကုသ၍ စောင့်ကြည့်ရန်",
     treat: "ကုသရန်",
     children: "ကလေး",
     adults: "လူကြီး",
@@ -360,11 +360,11 @@ export const mm = {
     supportiveGeneralDetail:
       "အန္တရာယ်နည်း — အနားယူရန်၊ ရေဓာတ်ပြည့်ဝရန်။ အန္တရာယ်လက္ခဏာ ပေါ်ပါက ပြန်လာရန် အကြံပြုပါ။",
     actDoseUnder5:
-      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် ပုံမှန် ပမာဏအတိုင်း",
     actDoseChild:
-      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ကလေး ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ကလေး ပုံမှန် ပမာဏအတိုင်း",
     actDoseAdult:
-      "လူကြီး ငှက်ဖျားဆေး (artemether-lumefantrine) — ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "လူကြီး ငှက်ဖျားဆေး (artemether-lumefantrine) — ပုံမှန် ပမာဏအတိုင်း",
     teleconsultScheduled: (days: number, phone: string) =>
       `${days} ရက် ပြန်လာချိန် တယ်လီ အကြံပြု စီစဉ်ပြီး။ အခြေအနေ ဆိုးပါက ${phone} သို့ ခေါ်ဆိုပါ။`,
   },
