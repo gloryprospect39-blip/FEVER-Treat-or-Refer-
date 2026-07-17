@@ -1,17 +1,11 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  Baby,
-  Brain,
-  Droplets,
-  Moon,
-  Skull,
-  Stethoscope,
-  Waves,
-  Zap,
-} from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 
 import { mm } from "@/lib/i18n/mm";
 import { isPediatricPathway, PATHWAY_ADULT } from "./pathways";
+
+/** Shared icon for every danger-sign tile (unified visual language). */
+export const DANGER_SIGN_ICON: LucideIcon = TriangleAlert;
 
 export interface DangerSignTile {
   triggerCode: string;
@@ -21,108 +15,98 @@ export interface DangerSignTile {
   consciousness?: "lethargic" | "unconscious";
 }
 
+function tile(
+  partial: Omit<DangerSignTile, "icon">,
+): DangerSignTile {
+  return { ...partial, icon: DANGER_SIGN_ICON };
+}
+
 /** IMCI danger signs — pediatric pathway (under 15). */
 export const PEDIATRIC_DANGER_SIGN_TILES: DangerSignTile[] = [
-  {
+  tile({
     triggerCode: "imci:convulsions",
-    icon: Zap,
     label: mm.dangerSigns.convulsions,
     dangerField: "convulsions",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:vomits_everything",
-    icon: Waves,
     label: mm.dangerSigns.vomitsEverything,
     dangerField: "vomits_everything",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:unconscious",
-    icon: Skull,
     label: mm.dangerSigns.unconscious,
     consciousness: "unconscious",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:lethargic",
-    icon: Moon,
     label: mm.dangerSigns.lethargic,
     consciousness: "lethargic",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:chest_indrawing",
-    icon: Stethoscope,
     label: mm.dangerSigns.chestIndrawing,
     dangerField: "chest_indrawing",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:stiff_neck",
-    icon: Brain,
     label: mm.dangerSigns.stiffNeck,
     dangerField: "stiff_neck",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:bulging_fontanelle",
-    icon: Baby,
     label: mm.dangerSigns.bulgingFontanelle,
     dangerField: "bulging_fontanelle",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:severe_palmar_pallor",
-    icon: Droplets,
     label: mm.dangerSigns.severePallor,
     dangerField: "severe_palmar_pallor",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:unable_to_drink_or_breastfeed",
-    icon: Droplets,
     label: mm.dangerSigns.unableToDrinkPediatric,
     dangerField: "unable_to_drink_or_breastfeed",
-  },
+  }),
 ];
 
 /** Adult pathway — excludes infant-specific signs (fontanelle, chest indrawing). */
 export const ADULT_DANGER_SIGN_TILES: DangerSignTile[] = [
-  {
+  tile({
     triggerCode: "imci:convulsions",
-    icon: Zap,
     label: mm.dangerSigns.convulsions,
     dangerField: "convulsions",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:vomits_everything",
-    icon: Waves,
     label: mm.dangerSigns.vomitsEverything,
     dangerField: "vomits_everything",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:unconscious",
-    icon: Skull,
     label: mm.dangerSigns.unconscious,
     consciousness: "unconscious",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:lethargic",
-    icon: Moon,
     label: mm.dangerSigns.lethargic,
     consciousness: "lethargic",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:stiff_neck",
-    icon: Brain,
     label: mm.dangerSigns.stiffNeck,
     dangerField: "stiff_neck",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:severe_palmar_pallor",
-    icon: Droplets,
     label: mm.dangerSigns.severePallor,
     dangerField: "severe_palmar_pallor",
-  },
-  {
+  }),
+  tile({
     triggerCode: "imci:unable_to_drink_or_breastfeed",
-    icon: Droplets,
     label: mm.dangerSigns.unableToDrinkAdult,
     dangerField: "unable_to_drink_or_breastfeed",
-  },
+  }),
 ];
 
 export function dangerSignTilesForPathway(pathway: string): DangerSignTile[] {
