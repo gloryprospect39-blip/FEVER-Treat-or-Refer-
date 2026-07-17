@@ -60,7 +60,7 @@ export const mm = {
   },
 
   patient: {
-    title: "လူနာ အချက်အလက် (မထည့်လည်းရသည်。)",
+    title: "လူနာ အချက်အလက် (မထည့်လည်းရသည်။)",
     name: "လူနာ အမည်",
     namePlaceholder: "အမည် ရိုက်ထည့်ပါ",
     village: "ကျေးရွာ / နေရပ်",
@@ -73,7 +73,7 @@ export const mm = {
     returningPatientNew: "— လူနာအသစ် —",
     returningPatientSelect: "ယခင်လူနာ ရွေးချယ်ပါ",
     returningPatientEmpty:
-      "ဤကျေးရွာတွင် ယခင်လူနာ မှတ်တမ်း မရှိသေးပါ — အမည် ထည့်ပြီး စစ်ဆေးပါက နောက်တစ်ကြိမံ ဤနေရာတွင် ပေါ်လာပါမည်။",
+      "ဤကျေးရွာတွင် ယခင်လူနာ မှတ်တမ်း မရှိသေးပါ — အမည် ထည့်ပြီး စစ်ဆေးပါက နောက်တစ်ကြိမ် ဤနေရာတွင် ပေါ်လာပါမည်။",
     visitTrace: (count: number, lastSeen: string) =>
       `Visit #${count} · last seen ${lastSeen}`,
     priorVisits: "ယခင်စစ်ဆေးမှု မှတ်တမ်း",
@@ -90,7 +90,7 @@ export const mm = {
   },
 
   vitals: {
-    title: "အခြေခံစမ်းသပ်မှု (မထည့်လည်းရသည်。)",
+    title: "အခြေခံစမ်းသပ်မှု (မထည့်လည်းရသည်။)",
     show: "အချက်အလက် ထည့်ရန်",
     hide: "အချက်အလက် ဝှက်ရန်",
     notMeasuredHelp:
