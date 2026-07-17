@@ -162,7 +162,8 @@ export function ReferralForm({
             </div>
             <p className="mt-1 text-sm text-slate-700">
               <span className="font-medium text-slate-500">
-                {mm.referral.urgency}:{" "}
+                {mm.referral.urgency}
+                {data.urgencyText ? ": " : ""}
               </span>
               {data.urgencyText}
             </p>
