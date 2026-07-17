@@ -162,9 +162,9 @@ export const mm = {
   result: {
     triageDecision: "စစ်ဆေးမှု ရလဒ်",
     referImmediate: "အုပ်စု (A) ချက်ချင်း ပို့ဆောင်ရန်",
-    refer: "အုပ်စု (A) လူနာအား ဆေးရုံသို့ အမြန်လွှဲပြောင်းကုသရန်",
-    treatAndMonitor: "အုပ်စု (B) ကုသ၍ စောင့်ကြည့်ရန်",
-    treat: "ကုသရန်",
+    refer: "အုပ်စု (B) လူနာအား ဆေးရုံသို့ အမြန်လွှဲပြောင်းကုသရန်",
+    treatAndMonitor: "အုပ်စု (C) ကုသ၍ စောင့်ကြည့်ရန်",
+    treat: "အုပ်စု (D) ကုသရန်",
     monitorReason: (days: number) =>
       `ယခု သောက်ရန် ဆေးပေးပီး ${days} ရက်အကြာတွင် ပြန်လာပြရပါမည်။`,
   },
@@ -290,8 +290,8 @@ export const mm = {
     totalPatients: "လူနာ စုစုပေါင်း",
     referrals: "ပို့ဆောင်မှု",
     referImmediate: "အုပ်စု (A) ချက်ချင်း ပို့ဆောင်ရန်",
-    treatMonitor: "အုပ်စု (B) ကုသ၍ စောင့်ကြည့်ရန်",
-    treat: "ကုသရန်",
+    treatMonitor: "အုပ်စု (C) ကုသ၍ စောင့်ကြည့်ရန်",
+    treat: "အုပ်စု (D) ကုသရန်",
     children: "ကလေး",
     adults: "လူကြီး",
     byDecision: "ဆုံးဖြတ်ချက် အလိုက်",
