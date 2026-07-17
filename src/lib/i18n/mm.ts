@@ -38,7 +38,7 @@ export const mm = {
 
   drugDispensing: {
     title: "ဤလူနာအတွက် ဆေးပေးမှု",
-    subtitle: "ကုသမှု / တယ်လီ အကြံပြု မတိုင်မီ ရွေးပါ",
+    subtitle: "ကုသမှု / ဖုန်းဖြင့် ညွှန်ကြားကုသမှု မတိုင်မီ ရွေးပါ",
     actLabel: "ငှက်ဖျားဆေး",
     paracetamolLabel: "ပါရာစီတမော",
     given: "ပေးပြီး",
@@ -152,11 +152,11 @@ export const mm = {
   actions: {
     assess: "လူနာ စစ်ဆေးရန်",
     newPatient: "လူနာအသစ်",
-    callTeleconsultation: "online ကုသမှု အတွက် ချိန်းဆိုရန်",
-    scheduleTeleconsultation: "onlineမှတဆင့် ဆရာဝန်ပြရန် ရက်ချိန်း စီစဥ်ပါ။",
+    callTeleconsultation: "ယခုချက်ချင်းခေါ်ဆိုရန်",
+    scheduleTeleconsultation: "ရက်ချိန်းတင်ထားရန်",
     startTreatment: "ကုသမှု စတင်ရန်",
     treatmentAcknowledged: "ကုသမှု အစီအစဉ်ကို အတည်ပြုပြီး။",
-    dialTeleconsultation: "online ကုသမှု အတွက် ချိန်းဆိုရန်",
+    dialTeleconsultation: "ယခုချက်ချင်းခေါ်ဆိုရန်",
   },
 
   result: {
@@ -220,7 +220,7 @@ export const mm = {
       "မှတ်တမ်း မရှိသေးပါ။ လူနာ စစ်ဆေးပြီး လုပ်ဆောင်ချက်များ ပြုလုပ်ပါက ဤနေရာတွင် ပေါ်လာပါမည်။",
     print: "ပရင့်ထုတ်ရန် / သိမ်းရန်",
     generatedAt: "ထုတ်ယူချိန်",
-    filterHeading: "ရက်စွဲ အကွာအဝေး",
+    filterHeading: "မှတ်တမ်းထုတ်လိုသော အချိန် အပိုင်းအခြားရွေးရန်",
     filterFrom: "စတင်ရက်",
     filterTo: "ပြီးဆုံးရက်",
     filterReset: "အားလုံး ပြန်ပြပါ",
@@ -235,8 +235,8 @@ export const mm = {
       `${total} ခုအနက် ${shown} ခု ပြသထားသည်`,
     events: {
       assess_completed: "စစ်ဆေးမှု ပြီးမြောက်",
-      teleconsultation_call: "တယ်လီ အကြံပြု ခေါ်ဆိုမှု",
-      schedule_teleconsultation: "တယ်လီ အကြံပြု စီစဉ်မှု",
+      teleconsultation_call: "ဖုန်းဖြင့် ညွှန်ကြားကုသမှု — ယခုချက်ချင်းခေါ်ဆိုရန်",
+      schedule_teleconsultation: "ဖုန်းဖြင့် ညွှန်ကြားကုသမှု — ရက်ချိန်းတင်ထားရန်",
       start_treatment: "ကုသမှု စတင်မှု",
       open_referral_form: "ပို့ဆောင်ရေး ဖောင် ဖွင့်မှု",
       print_referral: "ပို့ဆောင်ရေး ဖောင် ပရင့်ထုတ်မှု",
@@ -271,7 +271,7 @@ export const mm = {
     urgency: "အကြံပြုချက်",
     referralReasons: "အကြံပြုရသည့် အကြောင်းရင်း",
     plan: "ကုသမှု / အကြံပြုချက်",
-    teleconsult: "တယ်လီ အကြံပြုခန်း ဖုန်း",
+    teleconsult: "ဖုန်းဖြင့် ညွှန်ကြားကုသမှု (teleconsultation)",
     signature: "လက်မှတ်",
     disclaimer:
       "ဤဖောင်သည် ပဏာမ အကြမ်းဖျဥ်း အသုံးပြုရန်သာ ဖြစ်ပါသည်။",
@@ -299,9 +299,9 @@ export const mm = {
     colEncounters: "စစ်ဆေးမှု",
     colPctTotal: "ခုနှုန်း %",
     colReferralRate: "ပို့ဆောင်မှု နှုန်း",
-    villageUnknown: "မသတ်မှတ်ရေး",
-    stockReportTitle: "ယနေ့ ဆေးသုံးစွဲမှု (ချက်ချင်း)",
-    stockReportSubtitle: "ကုသမှု / တယ်လီ အကြံပြု လုပ်ဆောင်ချက်မှတ်တမ်းများ",
+    villageUnknown: "ကျေးရွာအမည် မဖြည့်ထားသူ",
+    stockReportTitle: "ဆေးသုံးစွဲမှု မှတ်တမ်း",
+    stockReportSubtitle: "ကုသမှု / ဖုန်းဖြင့် ညွှန်ကြားကုသမှု လုပ်ဆောင်ချက်မှတ်တမ်းများ",
     stockReportEmpty: "ယနေ့ ဆေးပေးမှု မှတ်တမ်း မရှိသေးပါ။",
     stockColDrug: "ဆေး",
     stockColGiven: "ပေးပြီး",
