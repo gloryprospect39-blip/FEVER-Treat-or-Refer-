@@ -127,7 +127,7 @@ export const mm = {
   },
 
   comorbidity: {
-    pediatricTitle: "အန္တရာယ်မြင့် အခြေအနေများ",
+    pediatricTitle: "အန္တရာယ်မြင့်စေနိုင်သော အခြေအနေများ",
     pediatricDesc: "သွေးအားနည်း သို့မဟုတ် အာဟာရချို့တဲ့မှု",
     adultTitle: "နာတာရှည်ရောဂါများ",
     adultDesc: "ကိုယ်ခန္ဓာ အစိတ်အပိုင်း အလိုက်",
@@ -264,7 +264,7 @@ export const mm = {
     feverNo: "ဖျားခြင်း မရှိ",
     vitals: "အခြေခံ တိုင်းတာမှုများ",
     dangerSigns: "အန္တရာယ် လက္ခဏာများ",
-    comorbidities: "အန္တရာယ်မြင့် အခြေအနေများ",
+    comorbidities: "အန္တရာယ်မြင့်စေနိုင်သော အခြေအနေများ",
     none: "မရှိ",
     decision: "စစ်ဆေးမှု ဆုံးဖြတ်ချက်",
     urgency: "အရေးပေါ် အဆင့်",

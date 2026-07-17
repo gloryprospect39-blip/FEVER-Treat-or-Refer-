@@ -1,18 +1,12 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  Activity,
-  Baby,
-  Bandage,
-  Droplets,
-  Heart,
-  Leaf,
-  Shield,
-  Wind,
-} from "lucide-react";
+import { CircleAlert } from "lucide-react";
 
 import type { Comorbidity } from "@/lib/decision-engine/models";
 import { mm } from "@/lib/i18n/mm";
 import { isAdultPathway, isPediatricPathway } from "./pathways";
+
+/** Shared icon for every comorbidity tile (unified visual language). */
+export const COMORBIDITY_ICON: LucideIcon = CircleAlert;
 
 export interface ComorbidityOption {
   comorbidity: Comorbidity;
@@ -21,76 +15,71 @@ export interface ComorbidityOption {
   label: string;
 }
 
+function withSharedIcon(
+  partial: Omit<ComorbidityOption, "icon">,
+): ComorbidityOption {
+  return { ...partial, icon: COMORBIDITY_ICON };
+}
+
 const PEDIATRIC: ComorbidityOption[] = [
-  {
+  withSharedIcon({
     comorbidity: "sickle_cell",
     system: mm.comorbidity.systemBlood,
-    icon: Droplets,
     label: mm.comorbidity.sickleCell,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "severe_malnutrition",
     system: mm.comorbidity.systemNutrition,
-    icon: Leaf,
     label: mm.comorbidity.severeMalnutrition,
-  },
+  }),
 ];
 
 const ADULT: ComorbidityOption[] = [
-  {
+  withSharedIcon({
     comorbidity: "chronic_heart_disease",
     system: mm.comorbidity.systemHeart,
-    icon: Heart,
     label: mm.comorbidity.chronicHeart,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "chronic_lung_disease",
     system: mm.comorbidity.systemLungs,
-    icon: Wind,
     label: mm.comorbidity.chronicLung,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "chronic_kidney_disease",
     system: mm.comorbidity.systemKidneys,
-    icon: Activity,
     label: mm.comorbidity.chronicKidney,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "hiv",
     system: mm.comorbidity.systemImmune,
-    icon: Shield,
     label: mm.comorbidity.hiv,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "immunosuppression",
     system: mm.comorbidity.systemImmune,
-    icon: Shield,
     label: mm.comorbidity.immunosuppression,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "sickle_cell",
     system: mm.comorbidity.systemBlood,
-    icon: Droplets,
     label: mm.comorbidity.sickleCell,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "severe_malnutrition",
     system: mm.comorbidity.systemNutrition,
-    icon: Leaf,
     label: mm.comorbidity.severeMalnutrition,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "pregnancy",
     system: mm.comorbidity.systemOther,
-    icon: Baby,
     label: mm.comorbidity.pregnancy,
-  },
-  {
+  }),
+  withSharedIcon({
     comorbidity: "recent_surgery_or_wound",
     system: mm.comorbidity.systemOther,
-    icon: Bandage,
     label: mm.comorbidity.recentSurgery,
-  },
+  }),
 ];
 
 export function comorbidityOptionsForBand(ageBand: string): ComorbidityOption[] {

@@ -35,7 +35,11 @@ import {
   DANGER_SIGN_ICON,
   dangerSignTilesForPathway,
 } from "@/lib/fevergate/danger-signs";
-import { comorbidityOptionsForBand, optionsBySystem } from "@/lib/fevergate/comorbidities";
+import {
+  COMORBIDITY_ICON,
+  comorbidityOptionsForBand,
+  optionsBySystem,
+} from "@/lib/fevergate/comorbidities";
 import { buildPatientContext } from "@/lib/fevergate/patient-context";
 import {
   ADULT_AGE_BANDS,
@@ -1069,7 +1073,7 @@ export function TriageApp() {
         {isPediatricPathway(ageBand) ? (
           <div className="grid gap-2 sm:grid-cols-2">
             {comorbidityOptionsForBand(ageBand).map((opt) => {
-              const Icon = opt.icon;
+              const Icon = COMORBIDITY_ICON;
               return (
                 <ToggleChip
                   key={opt.comorbidity}
@@ -1089,7 +1093,7 @@ export function TriageApp() {
               </p>
               <div className="grid gap-2 sm:grid-cols-2">
                 {opts.map((opt) => {
-                  const Icon = opt.icon;
+                  const Icon = COMORBIDITY_ICON;
                   return (
                     <ToggleChip
                       key={opt.comorbidity}
