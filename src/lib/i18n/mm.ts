@@ -153,7 +153,7 @@ export const mm = {
     assess: "လူနာ စစ်ဆေးရန်",
     newPatient: "လူနာအသစ်",
     callTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
-    scheduleTeleconsultation: "onlineမှတဆင့် ဆရာဝန်ပြရန် ရက်ချိန်း စီစဉ်ပါ။",
+    scheduleTeleconsultation: "onlineမှတဆင့် ဆရာဝန်ပြရန် ရက်ချိန်း စီစဥ်ပါ။",
     startTreatment: "ကုသမှု စတင်ရန်",
     treatmentAcknowledged: "ကုသမှု အစီအစဉ်ကို အတည်ပြုပြီး။",
     dialTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
