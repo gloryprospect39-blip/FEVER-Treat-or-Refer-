@@ -168,12 +168,7 @@ export function ReferralForm({
               {data.urgencyText}
             </p>
             {data.reason && (
-              <p className="mt-1 text-sm text-slate-700">
-                <span className="font-medium text-slate-500">
-                  {mm.referral.referralReasons}:{" "}
-                </span>
-                {data.reason}
-              </p>
+              <p className="mt-1 text-sm text-slate-700">{data.reason}</p>
             )}
           </div>
 
