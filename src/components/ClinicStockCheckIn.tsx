@@ -51,10 +51,7 @@ export function ClinicStockCheckIn({
 
   return (
     <div className="mt-5 border-t border-slate-200 pt-4">
-      <p className="text-sm font-semibold text-slate-800">
-        {mm.clinic.stockHeading}
-      </p>
-      <p className="mt-1 text-xs text-slate-500">{mm.clinic.stockHint}</p>
+      <p className="text-xs text-slate-500">{mm.clinic.stockHint}</p>
       <div className="mt-3 space-y-3">
         {SESSION_STOCK_DRUGS.map((drug) => (
           <div key={drug} className="space-y-2">
