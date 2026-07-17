@@ -16,6 +16,7 @@ import {
   type EncounterSummary,
   type VillageSummaryRow,
 } from "@/lib/fevergate/reports";
+import { decisionLabel } from "@/lib/fevergate/decision-labels";
 import {
   summarizeDrugDispensing,
   type DrugDispensingSummary,
@@ -35,16 +36,13 @@ function ageBandLabel(row: EncounterRow): string {
   return isChildEncounter(row) ? mm.report.children : mm.report.adults;
 }
 
-function decisionLabel(decision: TriageDecision): string {
-  if (decision === "REFER" || decision === "REFER_IMMEDIATE")
-    return mm.result.refer;
-  if (decision === "TREAT_AND_MONITOR") return mm.result.treatAndMonitor;
-  return mm.result.treat;
+function decisionLabelForRow(decision: TriageDecision): string {
+  return decisionLabel(decision);
 }
 
 function decisionClass(decision: TriageDecision): string {
-  if (decision === "REFER" || decision === "REFER_IMMEDIATE")
-    return "bg-rose-100 text-rose-800";
+  if (decision === "REFER_IMMEDIATE") return "bg-rose-200 text-rose-900";
+  if (decision === "REFER") return "bg-rose-100 text-rose-800";
   if (decision === "TREAT_AND_MONITOR") return "bg-amber-100 text-amber-800";
   return "bg-emerald-100 text-emerald-800";
 }
@@ -85,9 +83,9 @@ function SummaryBlock({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label={mm.report.totalPatients} value={summary.total} accent="text-teal-700" />
         <Stat label={mm.report.referrals} value={summary.referrals} accent="text-rose-700" />
-        <Stat label={mm.report.referImmediate} value={summary.referImmediate} accent="text-rose-700" />
-        <Stat label={mm.report.treatMonitor} value={summary.treatMonitor} accent="text-amber-700" />
-        <Stat label={mm.report.treat} value={summary.treat} accent="text-emerald-700" />
+        <Stat label={mm.result.referImmediate} value={summary.referImmediate} accent="text-rose-700" />
+        <Stat label={mm.result.treatAndMonitor} value={summary.treatMonitor} accent="text-amber-700" />
+        <Stat label={mm.result.treat} value={summary.treat} accent="text-emerald-700" />
         <Stat label={mm.report.children} value={summary.children} accent="text-slate-900" />
         <Stat label={mm.report.adults} value={summary.adults} accent="text-slate-900" />
       </div>
@@ -125,7 +123,7 @@ function VillageBreakdownTable({
                 <th className="py-2 pr-3 font-medium">{mm.report.colPctTotal}</th>
                 <th className="py-2 pr-3 font-medium">{mm.report.referrals}</th>
                 <th className="py-2 pr-3 font-medium">{mm.report.colReferralRate}</th>
-                <th className="py-2 font-medium">{mm.report.treatMonitor}</th>
+                <th className="py-2 font-medium">{mm.result.treatAndMonitor}</th>
               </tr>
             </thead>
             <tbody>

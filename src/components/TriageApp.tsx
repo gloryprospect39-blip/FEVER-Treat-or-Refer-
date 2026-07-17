@@ -61,6 +61,7 @@ import {
   type TreatmentPlan,
 } from "@/lib/fevergate/treatment-plan";
 import { CLINIC_VILLAGES } from "@/lib/fevergate/villages";
+import { decisionLabel } from "@/lib/fevergate/decision-labels";
 import {
   EMPTY_VITAL_SELECTIONS,
   resolveVitalsFromCategories,
@@ -106,8 +107,8 @@ const CARD_STYLES: Record<
   { bg: string; label: string; reasonClass: string }
 > = {
   REFER_IMMEDIATE: {
-    bg: "from-rose-600 to-red-700",
-    label: mm.result.refer,
+    bg: "from-rose-700 to-red-800",
+    label: mm.result.referImmediate,
     reasonClass: "text-rose-50",
   },
   REFER: {
@@ -163,9 +164,7 @@ function formatVisitDate(iso: string): string {
 }
 
 function priorDecisionLabel(decision: string): string {
-  if (decision === "REFER" || decision === "REFER_IMMEDIATE") return mm.result.refer;
-  if (decision === "TREAT_AND_MONITOR") return mm.result.treatAndMonitor;
-  return mm.result.treat;
+  return decisionLabel(decision);
 }
 
 export function TriageApp() {
