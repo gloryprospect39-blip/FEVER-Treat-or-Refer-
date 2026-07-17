@@ -153,7 +153,7 @@ export const mm = {
     assess: "လူနာ စစ်ဆေးရန်",
     newPatient: "လူနာအသစ်",
     callTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
-    scheduleTeleconsultation: "တယ်လီ အကြံပြု စီစဉ်ရန်",
+    scheduleTeleconsultation: "onlineမှတဆင့် ဆရာဝန်ပြရန် ရက်ချိန်း စီစဉ်ပါ။",
     startTreatment: "ကုသမှု စတင်ရန်",
     treatmentAcknowledged: "ကုသမှု အစီအစဉ်ကို အတည်ပြုပြီး။",
     dialTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
@@ -360,11 +360,11 @@ export const mm = {
     supportiveGeneralDetail:
       "အန္တရာယ်နည်း — အနားယူရန်၊ ရေဓာတ်ပြည့်ဝရန်။ အန္တရာယ်လက္ခဏာ ပေါ်ပါက ပြန်လာရန် အကြံပြုပါ။",
     actDoseUnder5:
-      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် ပုံမှန် ပမာဏအတိုင်း",
     actDoseChild:
-      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ကလေး ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ကလေး ပုံမှန် ပမာဏအတိုင်း",
     actDoseAdult:
-      "လူကြီး ငှက်ဖျားဆေး (artemether-lumefantrine) — ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "လူကြီး ငှက်ဖျားဆေး (artemether-lumefantrine) — ပုံမှန် ပမာဏအတိုင်း",
     teleconsultScheduled: (days: number, phone: string) =>
       `${days} ရက် ပြန်လာချိန် တယ်လီ အကြံပြု စီစဉ်ပြီး။ အခြေအနေ ဆိုးပါက ${phone} သို့ ခေါ်ဆိုပါ။`,
   },
