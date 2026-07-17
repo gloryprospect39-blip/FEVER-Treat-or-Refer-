@@ -18,6 +18,7 @@ const EXTRA: Record<string, string> = {
 export function urgencyPhrase(urgency: ReferralUrgency): string {
   if (urgency === "immediate") return mm.referReason.referImmediately;
   if (urgency === "same_day") return mm.referReason.referSameDay;
+  if (urgency === "routine") return "";
   return mm.referReason.refer;
 }
 
