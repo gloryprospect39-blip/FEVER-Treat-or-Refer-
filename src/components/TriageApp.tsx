@@ -4,14 +4,12 @@ import {
   ArrowLeft,
   Calendar,
   FileText,
-  LayoutDashboard,
   Phone,
   Stethoscope,
   Thermometer,
   User,
   UserPlus,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { ReferralForm, type ReferralData } from "@/components/ReferralForm";
@@ -741,15 +739,6 @@ export function TriageApp() {
           {mm.app.title}
         </h1>
         <p className="mt-1 text-slate-500">{mm.app.tagline}</p>
-        <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <Link
-            href="/supervisor"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-slate-50"
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            {mm.nav.supervisor}
-          </Link>
-        </div>
       </header>
 
       <SectionCard title={mm.patient.title} icon={<User className="h-5 w-5" />}>
@@ -864,6 +853,7 @@ export function TriageApp() {
         title={mm.clinic.title}
         icon={<Thermometer className="h-5 w-5" />}
       >
+        <p className="mb-2 text-xs text-slate-500">{mm.clinic.stockHint}</p>
         {!showClinic && !sessionStock ? (
           <p className="mb-2 text-xs text-amber-800">{mm.clinic.stockReminder}</p>
         ) : null}
