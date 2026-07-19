@@ -92,10 +92,12 @@ SLIDES = [
             "Supervisor hub: KPIs, decision mix, village volume, drug & activity",
             "Groups A–D wording · teleconsult CTAs · recommendation-style forms",
             "Shared decision labels across triage, reports, and dashboard",
+            "Four-audience feedback form (expert · medic · CS · public)",
         ],
         "notes": (
             "Built for real clinic friction — stock unpredictability, epidemiology "
-            "reporting, and a separate supervisor view so medics stay focused."
+            "reporting, and a separate supervisor view so medics stay focused. "
+            "Today we also ship structured feedback forms for four audiences."
         ),
     },
     {
@@ -118,14 +120,32 @@ SLIDES = [
         "bullets": [
             "v1: Groups A–D + stock check-in + supervisor reporting",
             "Next: MOH clinical sign-off · teleconsult routing · district sync",
-            "Ask: field validation partners + epidemiology feedback",
+            "Ask: field validation partners + structured feedback after demo",
             "",
             '"I picked the age band, tapped the signs, and it told me exactly '
             'what to do — Group A through D, with exactly why."',
         ],
         "notes": (
             "FeverGate turns guideline knowledge into bedside action when the worker is "
-            "alone and stock is unpredictable. Thank you — questions welcome."
+            "alone and stock is unpredictable. Hand out the four-audience feedback form, "
+            "then take questions."
+        ),
+    },
+    {
+        "title": "Closing — today's status",
+        "subtitle": "Ready to demo · ready to collect feedback",
+        "bullets": [
+            "Live app: fever-treat-or-refer.vercel.app",
+            "Four outcomes: A immediate refer · B urgent refer · C treat & monitor · D treat",
+            "Clinic stock check-in · URL-only supervisor hub · shared decision labels",
+            "Feedback form (today): Expert · Medic · Computer science · General public",
+            "Next ask: supervised clinical audit → limited field pilot",
+            "",
+            "Thank you — questions welcome.",
+        ],
+        "notes": (
+            "Close on today's package: Groups A–D product, supervisor reporting, and the "
+            "four-audience feedback form. Invite each audience to fill their section."
         ),
     },
 ]
@@ -158,14 +178,14 @@ def add_title_slide(prs: Presentation) -> None:
 
     tag = slide.shapes.add_textbox(Inches(0.8), Inches(4.1), Inches(8.4), Inches(0.5))
     tp = tag.text_frame.paragraphs[0]
-    tp.text = "Updated · Groups A–D · stock check-in · supervisor hub"
+    tp.text = "Updated · Groups A–D · stock check-in · supervisor hub · feedback forms"
     tp.font.size = Pt(14)
     tp.font.color.rgb = TEAL
     tp.alignment = PP_ALIGN.CENTER
 
     footer = slide.shapes.add_textbox(Inches(0.8), Inches(6.8), Inches(8.4), Inches(0.4))
     fp = footer.text_frame.paragraphs[0]
-    fp.text = "9 slides · ~5 minutes total"
+    fp.text = "10 slides · ~5 minutes total"
     fp.font.size = Pt(12)
     fp.font.color.rgb = MUTED
     fp.alignment = PP_ALIGN.CENTER
