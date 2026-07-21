@@ -16,7 +16,7 @@ function decisionSegments(summary: EncounterSummary): Segment[] {
       key: "referImmediate",
       count: summary.referImmediate,
       color: "bg-rose-700",
-      label: mm.report.referImmediate,
+      label: mm.result.referImmediate,
     },
     {
       key: "refer",
@@ -28,13 +28,13 @@ function decisionSegments(summary: EncounterSummary): Segment[] {
       key: "treatMonitor",
       count: summary.treatMonitor,
       color: "bg-amber-400",
-      label: mm.report.treatMonitor,
+      label: mm.result.treatAndMonitor,
     },
     {
       key: "treat",
       count: summary.treat,
       color: "bg-emerald-500",
-      label: mm.report.treat,
+      label: mm.result.treat,
     },
   ];
 }

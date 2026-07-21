@@ -38,7 +38,7 @@ export const mm = {
 
   drugDispensing: {
     title: "ဤလူနာအတွက် ဆေးပေးမှု",
-    subtitle: "ကုသမှု / တယ်လီ အကြံပြု မတိုင်မီ ရွေးပါ",
+    subtitle: "ကုသမှု / ဖုန်းဖြင့် ညွှန်ကြားကုသမှု မတိုင်မီ ရွေးပါ",
     actLabel: "ငှက်ဖျားဆေး",
     paracetamolLabel: "ပါရာစီတမော",
     given: "ပေးပြီး",
@@ -152,18 +152,19 @@ export const mm = {
   actions: {
     assess: "လူနာ စစ်ဆေးရန်",
     newPatient: "လူနာအသစ်",
-    callTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
-    scheduleTeleconsultation: "တယ်လီ အကြံပြု စီစဉ်ရန်",
+    callTeleconsultation: "ယခုချက်ချင်းခေါ်ဆိုရန်",
+    scheduleTeleconsultation: "ရက်ချိန်းတင်ထားရန်",
     startTreatment: "ကုသမှု စတင်ရန်",
     treatmentAcknowledged: "ကုသမှု အစီအစဉ်ကို အတည်ပြုပြီး။",
-    dialTeleconsultation: "တယ်လီ အကြံပြုခန်း ခေါ်ဆိုရန်",
+    dialTeleconsultation: "ယခုချက်ချင်းခေါ်ဆိုရန်",
   },
 
   result: {
     triageDecision: "စစ်ဆေးမှု ရလဒ်",
-    refer: "ပို့ဆောင်ရန်",
-    treatAndMonitor: "ကုသ၍ စောင့်ကြည့်ရန်",
-    treat: "ကုသရန်",
+    referImmediate: "အုပ်စု (A) ချက်ချင်း ပို့ဆောင်ရန်",
+    refer: "အုပ်စု (B) လူနာအား ဆေးရုံသို့ အမြန်လွှဲပြောင်းကုသရန်",
+    treatAndMonitor: "အုပ်စု (C) ကုသ၍ စောင့်ကြည့်ရန်",
+    treat: "အုပ်စု (D) ကုသရန်",
     monitorReason: (days: number) =>
       `ယခု သောက်ရန် ဆေးပေးပီး ${days} ရက်အကြာတွင် ပြန်လာပြရပါမည်။`,
   },
@@ -219,7 +220,7 @@ export const mm = {
       "မှတ်တမ်း မရှိသေးပါ။ လူနာ စစ်ဆေးပြီး လုပ်ဆောင်ချက်များ ပြုလုပ်ပါက ဤနေရာတွင် ပေါ်လာပါမည်။",
     print: "ပရင့်ထုတ်ရန် / သိမ်းရန်",
     generatedAt: "ထုတ်ယူချိန်",
-    filterHeading: "ရက်စွဲ အကွာအဝေး",
+    filterHeading: "မှတ်တမ်းထုတ်လိုသော အချိန် အပိုင်းအခြားရွေးရန်",
     filterFrom: "စတင်ရက်",
     filterTo: "ပြီးဆုံးရက်",
     filterReset: "အားလုံး ပြန်ပြပါ",
@@ -234,8 +235,8 @@ export const mm = {
       `${total} ခုအနက် ${shown} ခု ပြသထားသည်`,
     events: {
       assess_completed: "စစ်ဆေးမှု ပြီးမြောက်",
-      teleconsultation_call: "တယ်လီ အကြံပြု ခေါ်ဆိုမှု",
-      schedule_teleconsultation: "တယ်လီ အကြံပြု စီစဉ်မှု",
+      teleconsultation_call: "ဖုန်းဖြင့် ညွှန်ကြားကုသမှု — ယခုချက်ချင်းခေါ်ဆိုရန်",
+      schedule_teleconsultation: "ဖုန်းဖြင့် ညွှန်ကြားကုသမှု — ရက်ချိန်းတင်ထားရန်",
       start_treatment: "ကုသမှု စတင်မှု",
       open_referral_form: "ပို့ဆောင်ရေး ဖောင် ဖွင့်မှု",
       print_referral: "ပို့ဆောင်ရေး ဖောင် ပရင့်ထုတ်မှု",
@@ -266,11 +267,11 @@ export const mm = {
     dangerSigns: "အန္တရာယ် လက္ခဏာများ",
     comorbidities: "အန္တရာယ်မြင့်စေနိုင်သော အခြေအနေများ",
     none: "မရှိ",
-    decision: "စစ်ဆေးမှု ဆုံးဖြတ်ချက်",
-    urgency: "အရေးပေါ် အဆင့်",
-    referralReasons: "ပို့ဆောင်ရသည့် အကြောင်းရင်း",
+    decision: "ဖြည့်စွက်မှုပြီးနောက် အကြံပြုချက်",
+    urgency: "အကြံပြုချက်",
+    referralReasons: "အကြံပြုရသည့် အကြောင်းရင်း",
     plan: "ကုသမှု / အကြံပြုချက်",
-    teleconsult: "တယ်လီ အကြံပြုခန်း ဖုန်း",
+    teleconsult: "ဖုန်းဖြင့် ညွှန်ကြားကုသမှု (teleconsultation)",
     signature: "လက်မှတ်",
     disclaimer:
       "ဤဖောင်သည် ပဏာမ အကြမ်းဖျဥ်း အသုံးပြုရန်သာ ဖြစ်ပါသည်။",
@@ -288,9 +289,9 @@ export const mm = {
     weekly: "လွန်ခဲ့သော ၇ ရက် (အပတ်စဉ်)",
     totalPatients: "လူနာ စုစုပေါင်း",
     referrals: "ပို့ဆောင်မှု",
-    referImmediate: "ချက်ချင်း ပို့ဆောင်",
-    treatMonitor: "ကုသ၍ စောင့်ကြည့်ရန်",
-    treat: "ကုသရန်",
+    referImmediate: "အုပ်စု (A) ချက်ချင်း ပို့ဆောင်ရန်",
+    treatMonitor: "အုပ်စု (C) ကုသ၍ စောင့်ကြည့်ရန်",
+    treat: "အုပ်စု (D) ကုသရန်",
     children: "ကလေး",
     adults: "လူကြီး",
     byDecision: "ဆုံးဖြတ်ချက် အလိုက်",
@@ -298,9 +299,9 @@ export const mm = {
     colEncounters: "စစ်ဆေးမှု",
     colPctTotal: "ခုနှုန်း %",
     colReferralRate: "ပို့ဆောင်မှု နှုန်း",
-    villageUnknown: "မသတ်မှတ်ရေး",
-    stockReportTitle: "ယနေ့ ဆေးသုံးစွဲမှု (ချက်ချင်း)",
-    stockReportSubtitle: "ကုသမှု / တယ်လီ အကြံပြု လုပ်ဆောင်ချက်မှတ်တမ်းများ",
+    villageUnknown: "ကျေးရွာအမည် မဖြည့်ထားသူ",
+    stockReportTitle: "ဆေးသုံးစွဲမှု မှတ်တမ်း",
+    stockReportSubtitle: "ကုသမှု / ဖုန်းဖြင့် ညွှန်ကြားကုသမှု လုပ်ဆောင်ချက်မှတ်တမ်းများ",
     stockReportEmpty: "ယနေ့ ဆေးပေးမှု မှတ်တမ်း မရှိသေးပါ။",
     stockColDrug: "ဆေး",
     stockColGiven: "ပေးပြီး",
@@ -325,7 +326,7 @@ export const mm = {
     elevatedQsofa: "qSOFA မြင့်မားခြင်း",
     elevatedNews2: "NEWS2 မြင့်မားခြင်း",
     elevatedSepsisScreen: "ဖျားနာရောဂါ ပြင်းထန်မှု",
-    elevatedSevereIllness: "ပြင်းထန်သော ရောဂါ လက္ခဏာ မြင့်မား",
+    elevatedSevereIllness: "ပြင်းထန်ရောဂါဖြစ်နိုင်ခြေ မြင့်မားပါသည်။",
     referImmediately: "ချက်ချင်း ပို့ဆောင်ရန်",
     referSameDay: "ယနေ့ပို့ဆောင်ရန်",
     refer: "ပို့ဆောင်ရန်",
@@ -334,7 +335,7 @@ export const mm = {
   treatment: {
     noOutpatient: "လူနာအပြင်ဘက် ကုသမှု မစတင်ရ",
     noOutpatientDetail:
-      "ပို့ဆောင်ရေး ဆေးရုံသို့ အမြန်သွားရန် စီစဉ်ပါ။ တယ်လီ အကြံပြုခန်း မတိုင်မီ ဒေသန္တရ ပရိုတိုကောလ် အရ တည်ငြိမ်အောင် ကုသပါ။",
+      "ဆေးရုံသို့ အမြန်သွားရန် စီစဉ်ပါ။ online ကုသမှု အတွက် ချိန်းဆိုရန် စီစဥ်နေစဥ် လိုအပ်သော ကုသမှုများ တပြိုင်နက် စတင်လုပ်ဆောင်ပါ။",
     actOutOfStock:
       "ဌက်ဖျားရောဂါ ယူဆကုသမှု လိုအပ်သော်လည်း ငှက်ဖျားဆေး မရှိပါ။",
     actOutOfStockDetail:
@@ -360,11 +361,11 @@ export const mm = {
     supportiveGeneralDetail:
       "အန္တရာယ်နည်း — အနားယူရန်၊ ရေဓာတ်ပြည့်ဝရန်။ အန္တရာယ်လက္ခဏာ ပေါ်ပါက ပြန်လာရန် အကြံပြုပါ။",
     actDoseUnder5:
-      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ၅ နှစ်အောက် ပုံမှန် ပမာဏအတိုင်း",
     actDoseChild:
-      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ကလေး ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "ကိုယ်အလေးချိန် အလိုက် ငှက်ဖျားဆေး (artemether-lumefantrine) — ကလေး ပုံမှန် ပမာဏအတိုင်း",
     actDoseAdult:
-      "လူကြီး ငှက်ဖျားဆေး (artemether-lumefantrine) — ပုံမှန်အားဖြင့် ပမာဏအတိုင်း",
+      "လူကြီး ငှက်ဖျားဆေး (artemether-lumefantrine) — ပုံမှန် ပမာဏအတိုင်း",
     teleconsultScheduled: (days: number, phone: string) =>
       `${days} ရက် ပြန်လာချိန် တယ်လီ အကြံပြု စီစဉ်ပြီး။ အခြေအနေ ဆိုးပါက ${phone} သို့ ခေါ်ဆိုပါ။`,
   },
