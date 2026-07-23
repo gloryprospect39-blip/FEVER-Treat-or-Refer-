@@ -1,15 +1,26 @@
 import "server-only";
 
-import type { FebrileAssessment, PatientContext } from "@/lib/decision-engine/models";
+import type {
+  FebrileAssessment,
+  PatientContext,
+  TriageDecision,
+} from "@/lib/decision-engine/models";
 import type { ClinicContext } from "@/lib/fevergate/treatment-plan";
 import type { PatientDrugDispensing } from "@/lib/fevergate/drug-dispensing";
 import { getSql } from "./client";
+
+export interface ActionableRecord {
+  clinical_decision: TriageDecision;
+  actionable_decision: TriageDecision;
+  actionable_reason: "act_stock_out" | null;
+}
 
 export interface EncounterRow {
   timestamp: string;
   patient: PatientContext;
   clinic: ClinicContext;
   assessment: FebrileAssessment;
+  actionable?: ActionableRecord;
   action_taken: string | null;
   patient_name?: string | null;
   village?: string | null;
@@ -22,6 +33,7 @@ export async function logEncounter(input: {
   ctx: PatientContext;
   assessment: FebrileAssessment;
   clinic: ClinicContext;
+  actionable?: ActionableRecord;
   actionTaken?: string | null;
   patientName?: string | null;
   village?: string | null;
@@ -34,6 +46,7 @@ export async function logEncounter(input: {
     patient: input.ctx,
     clinic: input.clinic,
     assessment: input.assessment,
+    actionable: input.actionable,
     action_taken: input.actionTaken ?? null,
     patient_name: input.patientName ?? null,
     village: input.village ?? null,

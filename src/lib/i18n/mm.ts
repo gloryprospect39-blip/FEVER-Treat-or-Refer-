@@ -22,6 +22,12 @@ export const mm = {
     lowEndemicity: "ဖြစ်ပွားမှုနည်း",
   },
 
+  assessStock: {
+    title: "ယနေ့ ဆေးခန်း စတော့",
+    subtitle:
+      "ဆုံးဖြတ်ချက် မချမီ ACT နှင့် ပါရာစီတမော ရှိ/မရှိ ရွေးပါ (တစ်နေ့ တစ်ကြိမ်)။",
+  },
+
   stockPrompt: {
     title: "ယနေ့ ဆေးခန်းတွင် ရှိ/မရှိ",
     actQuestion: "ငှက်ဖျားဆေး — ယနေ့ ပေးနိုင်ပါသလား။",
@@ -38,7 +44,7 @@ export const mm = {
 
   drugDispensing: {
     title: "ဤလူနာအတွက် ဆေးပေးမှု",
-    subtitle: "ကုသမှု / ဖုန်းဖြင့် ညွှန်ကြားကုသမှု မတိုင်မီ ရွေးပါ",
+    subtitle: "ပေးခဲ့သော ဆေးကို မှတ်တမ်းတင်ပါ",
     actLabel: "ငှက်ဖျားဆေး",
     paracetamolLabel: "ပါရာစီတမော",
     given: "ပေးပြီး",
