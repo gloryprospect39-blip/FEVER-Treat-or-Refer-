@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { AssessStockModal } from "@/components/AssessStockModal";
 import { ReferralForm, type ReferralData } from "@/components/ReferralForm";
 import {
   ClinicStockCheckIn,
@@ -19,10 +20,6 @@ import {
 } from "@/components/ClinicStockCheckIn";
 import { PatientDrugPanel } from "@/components/PatientDrugPanel";
 import { SectionCard } from "@/components/SectionCard";
-import {
-  StockPromptPanel,
-  StockSessionSummary,
-} from "@/components/StockPromptPanel";
 import { ToggleChip } from "@/components/ToggleChip";
 import { evaluateFebrilePatient } from "@/lib/decision-engine";
 import type {
@@ -51,12 +48,17 @@ import {
   defaultAgeBandIndex,
   isPediatricPathway,
 } from "@/lib/fevergate/pathways";
-import { buildReferReason, urgencyPhrase } from "@/lib/fevergate/treatment-plan";
 import {
-  buildTreatmentPlan,
+  evaluateActionableOutcome,
+  type ActionableOutcome,
+} from "@/lib/fevergate/actionable-pathway";
+import type { ActionableRecord } from "@/lib/db/encounters";
+import {
+  buildReferReason,
   scheduleTeleconsultationNote,
   teleconsultationDialUrl,
   TELECONSULTATION_NUMBER,
+  urgencyPhrase,
   type ClinicContext,
   type TreatmentPlan,
 } from "@/lib/fevergate/treatment-plan";
@@ -82,8 +84,8 @@ import type {
 } from "@/lib/fevergate/registry-types";
 import {
   buildClinicWithStock,
-  needsStockPrompt,
-  sessionStockForDrugs,
+  SESSION_STOCK_DRUGS,
+  stockAnswersComplete,
   stockDrugsNeeded,
   type SessionStock,
 } from "@/lib/fevergate/stock-prompts";
@@ -95,7 +97,16 @@ interface SessionResult {
   patientContext: PatientContext;
   treatmentPlan: TreatmentPlan;
   clinic: ClinicContext;
+  actionable: ActionableOutcome;
   registeredPatient?: RegisteredPatient | null;
+}
+
+function toActionableRecord(outcome: ActionableOutcome): ActionableRecord {
+  return {
+    clinical_decision: outcome.clinicalDecision,
+    actionable_decision: outcome.actionableDecision,
+    actionable_reason: outcome.actionableReason,
+  };
 }
 
 type PendingTreatAction =
@@ -203,7 +214,7 @@ export function TriageApp() {
   const [endemicity, setEndemicity] = useState<"high" | "low">("high");
   const [showClinic, setShowClinic] = useState(false);
   const [sessionStock, setSessionStock] = useState<SessionStock | null>(null);
-  const [stockPromptOpen, setStockPromptOpen] = useState(false);
+  const [assessStockModalOpen, setAssessStockModalOpen] = useState(false);
   const [pendingTreatAction, setPendingTreatAction] =
     useState<PendingTreatAction | null>(null);
 
@@ -325,21 +336,29 @@ export function TriageApp() {
     </label>
   );
 
+  const sessionStockReady =
+    sessionStock !== null &&
+    stockAnswersComplete(SESSION_STOCK_DRUGS, sessionStock);
+
   const clinicContextForStock = (stock: SessionStock): ClinicContext =>
     buildClinicWithStock(endemicity, stock);
 
-  const applyStockToResult = (stock: SessionStock) => {
+  const handleSessionStockChange = (stock: SessionStock) => {
     setSessionStock(stock);
-    setStockPromptOpen(false);
     setResult((current) => {
       if (!current) return current;
       const clinic = clinicContextForStock(stock);
-      const treatmentPlan = buildTreatmentPlan(
+      const actionable = evaluateActionableOutcome(
         current.patientContext,
         current.assessment,
         clinic,
       );
-      return { ...current, clinic, treatmentPlan };
+      return {
+        ...current,
+        clinic,
+        treatmentPlan: actionable.treatmentPlan,
+        actionable,
+      };
     });
   };
 
@@ -361,6 +380,7 @@ export function TriageApp() {
         patient: session.patientContext,
         assessment: session.assessment,
         clinic: session.clinic,
+        actionable: toActionableRecord(session.actionable),
         actionTaken,
         drugDispensing: drugDispensing ?? null,
         patientName: patientName.trim() || null,
@@ -405,9 +425,11 @@ export function TriageApp() {
 
   const requestTreatAction = (action: PendingTreatAction) => {
     if (!result) return;
+    const { patientContext, assessment, actionable } = result;
+    if (actionable.isReferAction) return;
     const drugs = drugsToLogForPatient(
-      result.patientContext,
-      result.assessment,
+      patientContext,
+      assessment,
       endemicity,
     );
     if (drugs.length > 0) {
@@ -422,7 +444,7 @@ export function TriageApp() {
     void executeTreatAction(pendingTreatAction, dispensing);
   };
 
-  const handleAssess = async () => {
+  const runAssessment = async (stock: SessionStock) => {
     setError(null);
     try {
       const ctx = buildPatientContext({
@@ -445,20 +467,17 @@ export function TriageApp() {
         setRegisteredPatientId(linkedPatient.id);
         void loadPatientHistory(linkedPatient);
       }
-      const stockNeeded = needsStockPrompt(ctx, assessment, endemicity);
-      const drugsNeeded = stockDrugsNeeded(ctx, assessment, endemicity);
-      const stock = sessionStock
-        ? sessionStockForDrugs(sessionStock, drugsNeeded)
-        : { act: true, paracetamol: true };
       const clinic = clinicContextForStock(stock);
-      const treatmentPlan = buildTreatmentPlan(ctx, assessment, clinic);
+      const actionable = evaluateActionableOutcome(ctx, assessment, clinic);
 
-      setStockPromptOpen(stockNeeded && !sessionStock);
+      setSessionStock(stock);
+      setAssessStockModalOpen(false);
       setResult({
         assessment,
         patientContext: ctx,
-        treatmentPlan,
+        treatmentPlan: actionable.treatmentPlan,
         clinic,
+        actionable,
         registeredPatient: linkedPatient,
       });
       setActionNote(null);
@@ -467,6 +486,8 @@ export function TriageApp() {
         ...activityContext(),
         metadata: {
           decision: assessment.decision,
+          actionable_decision: actionable.actionableDecision,
+          actionable_reason: actionable.actionableReason,
           pathway,
           ageBand,
         },
@@ -476,11 +497,19 @@ export function TriageApp() {
     }
   };
 
+  const handleAssess = () => {
+    if (!sessionStockReady) {
+      setAssessStockModalOpen(true);
+      return;
+    }
+    void runAssessment(sessionStock);
+  };
+
   const resetForm = () => {
     setResult(null);
     setActionNote(null);
     setShowReferral(false);
-    setStockPromptOpen(false);
+    setAssessStockModalOpen(false);
     setPendingTreatAction(null);
     setDangerTiles({});
     setComorbidities([]);
@@ -508,29 +537,24 @@ export function TriageApp() {
   };
 
   if (result) {
-    const { assessment, treatmentPlan, patientContext, registeredPatient: linked } =
-      result;
-    const style = CARD_STYLES[assessment.decision];
-    const isRefer =
-      assessment.decision === "REFER" ||
-      assessment.decision === "REFER_IMMEDIATE";
-    const drugsNeeded = stockDrugsNeeded(
-      patientContext,
+    const {
       assessment,
-      endemicity,
-    );
-    const stockRequired = drugsNeeded.length > 0;
-    const awaitingStock = stockRequired && stockPromptOpen;
-    const showStockSummary =
-      stockRequired && sessionStock && !stockPromptOpen;
+      treatmentPlan,
+      patientContext,
+      actionable,
+      registeredPatient: linked,
+    } = result;
+    const decision = actionable.actionableDecision;
+    const style = CARD_STYLES[decision];
+    const isRefer = actionable.isReferAction;
 
     const reason = isRefer
-      ? buildReferReason(assessment.referral_reasons, assessment.urgency, pathway)
-      : assessment.decision === "TREAT_AND_MONITOR"
+      ? actionable.actionableReason === "act_stock_out"
+        ? treatmentPlan.summary
+        : buildReferReason(assessment.referral_reasons, assessment.urgency, pathway)
+      : decision === "TREAT_AND_MONITOR"
         ? mm.result.monitorReason(assessment.monitoring_days)
-        : awaitingStock
-          ? mm.stockPrompt.answerToSeePlan
-          : treatmentPlan.summary;
+        : treatmentPlan.summary;
 
     const referralData: ReferralData = {
       patientName: patientName.trim() || mm.patient.unnamed,
@@ -589,31 +613,15 @@ export function TriageApp() {
             {style.label}
           </h1>
           <div className={`mt-3 space-y-1 text-lg font-medium ${style.reasonClass}`}>
-            {toSentences(reason).map((sentence, i) => (
+          {toSentences(reason).map((sentence, i) => (
+            <p key={i}>{sentence}</p>
+          ))}
+          </div>
+          <div className="mt-4 space-y-1.5 text-base leading-relaxed opacity-95">
+            {toSentences(treatmentPlan.detail).map((sentence, i) => (
               <p key={i}>{sentence}</p>
             ))}
           </div>
-          {stockRequired && stockPromptOpen && (
-            <StockPromptPanel
-              needed={drugsNeeded}
-              initial={sessionStock ?? undefined}
-              onConfirm={applyStockToResult}
-            />
-          )}
-          {showStockSummary && sessionStock && (
-            <StockSessionSummary
-              needed={drugsNeeded}
-              stock={sessionStock}
-              onChange={() => setStockPromptOpen(true)}
-            />
-          )}
-          {!awaitingStock && (
-            <div className="mt-4 space-y-1.5 text-base leading-relaxed opacity-95">
-              {toSentences(treatmentPlan.detail).map((sentence, i) => (
-                <p key={i}>{sentence}</p>
-              ))}
-            </div>
-          )}
         </div>
 
         {actionNote && (
@@ -631,7 +639,7 @@ export function TriageApp() {
                 logActivityClient({
                   eventType: "teleconsultation_call",
                   ...activityContext(),
-                  metadata: { decision: assessment.decision },
+                  metadata: { decision: actionable.actionableDecision },
                 });
                 setActionNote(
                   `${mm.actions.dialTeleconsultation}: ${teleconsultationDialUrl().replace("tel:", "")}`,
@@ -644,26 +652,24 @@ export function TriageApp() {
             </button>
           )}
 
-          {assessment.decision === "TREAT_AND_MONITOR" && (
+          {decision === "TREAT_AND_MONITOR" && (
             <button
               type="button"
-              disabled={awaitingStock}
               onClick={() =>
                 requestTreatAction({ type: "schedule_teleconsultation" })
               }
-              className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-amber-700"
             >
               <Calendar className="h-5 w-5" />
               {treatmentPlan.primaryActionLabel}
             </button>
           )}
 
-          {assessment.decision === "TREAT" && (
+          {decision === "TREAT" && (
             <button
               type="button"
-              disabled={awaitingStock}
               onClick={() => requestTreatAction({ type: "start_treatment" })}
-              className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 py-4 text-base font-semibold text-white shadow-lg transition hover:bg-emerald-800"
             >
               <Stethoscope className="h-5 w-5" />
               {treatmentPlan.primaryActionLabel}
@@ -676,7 +682,7 @@ export function TriageApp() {
               logActivityClient({
                 eventType: "open_referral_form",
                 ...activityContext(),
-                metadata: { decision: assessment.decision },
+                metadata: { decision: actionable.actionableDecision },
               });
               setShowReferral(true);
             }}
@@ -692,7 +698,7 @@ export function TriageApp() {
               handleNewPatient(
                 isRefer
                   ? "refer_new_patient"
-                  : assessment.decision === "TREAT_AND_MONITOR"
+                  : decision === "TREAT_AND_MONITOR"
                     ? "monitor_new_patient"
                     : "treat_new_patient",
               )
@@ -725,7 +731,7 @@ export function TriageApp() {
             logActivityClient({
               eventType: "print_referral",
               ...activityContext(),
-              metadata: { decision: assessment.decision },
+              metadata: { decision: actionable.actionableDecision },
             })
           }
         />
@@ -898,7 +904,7 @@ export function TriageApp() {
             </div>
             <ClinicStockCheckIn
               value={sessionStock}
-              onChange={applyStockToResult}
+              onChange={handleSessionStockChange}
             />
           </div>
         )}
@@ -1123,6 +1129,15 @@ export function TriageApp() {
         {mm.actions.assess}
       </button>
     </div>
+    {assessStockModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+        <AssessStockModal
+          initial={sessionStock}
+          onConfirm={(stock) => void runAssessment(stock)}
+          onCancel={() => setAssessStockModalOpen(false)}
+        />
+      </div>
+    )}
     </>
   );
 }

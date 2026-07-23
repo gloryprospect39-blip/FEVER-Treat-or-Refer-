@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { logEncounter } from "@/lib/db/encounters";
 import type { FebrileAssessment, PatientContext } from "@/lib/decision-engine/models";
+import type { ActionableRecord } from "@/lib/db/encounters";
 import type { ClinicContext } from "@/lib/fevergate/treatment-plan";
 
 export async function POST(request: Request) {
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
       ctx: body.patient as PatientContext,
       assessment: body.assessment as FebrileAssessment,
       clinic: body.clinic as ClinicContext,
+      actionable: body.actionable as ActionableRecord | undefined,
       actionTaken: body.actionTaken ?? null,
       patientName: body.patientName ?? null,
       village: body.village ?? null,
